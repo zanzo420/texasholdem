@@ -1,6 +1,6 @@
 // https://en.wikipedia.org/wiki/Standard_52-card_deck
 
-class PokerCard {
+class Card {
     constructor(suit, rank) {
         this.suit = suit;
         this.rank = rank;
@@ -8,11 +8,15 @@ class PokerCard {
 
     toString() {
         // \u{1F0A0} == \uD83C\uDCA0
-        return String.fromCharCode(0xD83C) + String.fromCharCode(0xDC90 + this.suit * 16 + this.rank);
+        return String.fromCharCode(0xD83C) + String.fromCharCode(0xDC90 + this.toInteger());
+    }
+
+    toInteger() {
+        return this.suit * 16 + this.rank;
     }
 }
 
-const PokerSuit = {
+const Suit = {
     NONE: 0,
     SPADE: 1,
     HEART: 2,
@@ -20,7 +24,7 @@ const PokerSuit = {
     CLUB: 4,
 }
 
-const PokerRank = {
+const Rank = {
     NONE: 0,
     ACE: 1,
     RANK2: 2,
@@ -62,28 +66,55 @@ const HandRankingCategory = {
 
 class HandRanking {
     constructor(category,
-            leadingRank,
-            secondRank = PokerRank.NONE,
-            thirdRank = PokerRank.NONE,
-            forthRank = PokerRank.NONE,
-            fifthRank = PokerRank.NONE) {
+            leadingRank = Rank.NONE,
+            secondRank = Rank.NONE,
+            thirdRank = Rank.NONE,
+            forthRank = Rank.NONE,
+            fifthRank = Rank.NONE) {
 
         this.category = category;
-        this.ranks = [PokerRank.NONE,PokerRank.NONE,PokerRank.NONE,PokerRank.NONE,PokerRank.NONE];
-        this.ranks[0] = leadingRank;
-        this.ranks[1] = secondRank;
-        this.ranks[2] = thirdRank;
-        this.ranks[3] = forthRank;
-        this.ranks[4] = fifthRank;
+        this.ranks = [leadingRank,secondRank,thirdRank,forthRank,fifthRank];
     }
 
     toInteger() {
-        this.category * 0xF00000
-        + this.ranks[0] * 0x0F0000
-        + this.ranks[1] * 0x00F000
-        + this.ranks[2] * 0x000F00
-        + this.ranks[3] * 0x0000F0
-        + this.ranks[4];
+        return this.category * 0xF00000
+        + this.getRankWeight(this.ranks[0]) * 0x010000
+        + this.getRankWeight(this.ranks[1]) * 0x001000
+        + this.getRankWeight(this.ranks[2]) * 0x000100
+        + this.getRankWeight(this.ranks[3]) * 0x000010
+        + this.getRankWeight(this.ranks[4]);
+    }
+
+    getRankWeight(rank) {
+        if (rank == Rank.ACE) {
+            return rank+13;
+        }
+        return rank;
+    }
+
+    toString() {
+        switch(this.category) {
+            case HandRankingCategory.HIGH_CARD:
+                return "High Card";
+            case HandRankingCategory.PAIR:
+                return "Pairs";
+            case HandRankingCategory.TWO_PAIRS:
+                return "Tow Pairs";
+            case HandRankingCategory.THREE_OF_A_KIND:
+                return "Three of a Kind";
+            case HandRankingCategory.STRAIGHT:
+                return "Straight";
+            case HandRankingCategory.FLUSH:
+                return "Flush";
+            case HandRankingCategory.FULL_HOUSE:
+                return "Full House";
+            case HandRankingCategory.FOUR_OF_A_KIND:
+                return "Four of a Kind";
+            case HandRankingCategory.STRAIGHT_FLUSH:
+                return "Straight Flush";
+            case HandRankingCategory.ROYAL_FLUSH:
+                return "Royal Flush";
+        }
     }
 }
 
@@ -113,7 +144,7 @@ class HandRankingAnalyzer {
         return maxCount;
     }
 
-    static getMaxCombo(suitsCount) {
+    static getMaxRankCombo(suitsCount) {
         var maxCombo = 0;
         var combo = 0;
 
@@ -128,7 +159,150 @@ class HandRankingAnalyzer {
             }
         }
 
+        // find any K-A combination
+        if (suitsCount[0] > 0) {
+            combo ++;
+            if (combo > maxCombo) {
+                maxCombo = combo;
+            }
+        }
+
         return maxCombo;
+    }
+
+    static generateFourOfAKind(ranksCount) {
+        var leadingRank = Rank.NONE;
+        var secondRank = Rank.NONE;
+        for (var i=0; i<13; i++) {
+            if (ranksCount[i] == 4) {
+                leadingRank = i + 1;
+            }
+            
+            if (ranksCount[i] == 1) {
+                secondRank = i + 1;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.FOUR_OF_A_KIND, leadingRank, secondRank);
+    }
+
+    static generateHighCard(ranksCount) {
+        var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
+        var secondRank = Rank.NONE;
+        var index = 0;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] != 0) {
+                cards[index] = i%13 + 1;
+                index++;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.HIGH_CARD, cards[0], cards[1], cards[2], cards[3], cards[4]);
+    }
+
+    static generatePair(ranksCount) {
+        var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
+        var secondRank = Rank.NONE;
+        var index = 1;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] == 1) {
+                cards[index] = i%13 + 1;
+                index++;
+            }
+            if (ranksCount[i%13] == 2) {
+                cards[0] = i%13 + 1;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.PAIR, cards[0], cards[1], cards[2], cards[3], cards[4]);
+    }
+
+    static generateTwoPairs(ranksCount) {
+        var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
+        var secondRank = Rank.NONE;
+        var index1 = 2;
+        var index2 = 0;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] == 1) {
+                cards[index1] = i%13 + 1;
+                index1++;
+            }
+            if (ranksCount[i%13] == 2) {
+                cards[index2] = i%13 + 1;
+                index2++;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.TWO_PAIRS, cards[0], cards[1], cards[2], cards[3], cards[4]);
+    }
+
+    static generateFlush(ranksCount) {
+        var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
+        var secondRank = Rank.NONE;
+        var index = 0;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] != 0) {
+                cards[index] = i%13 + 1;
+                index++;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.FLUSH, cards[0], cards[1], cards[2], cards[3], cards[4]);
+    }
+
+    static generateFullHouse(ranksCount) {
+        var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
+        var secondRank = Rank.NONE;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] == 3) {
+                cards[0] = i%13 + 1;
+            }
+            if (ranksCount[i%13] == 2) {
+                cards[1] = i%13 + 1;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.FULL_HOUSE, cards[0], cards[1], cards[2], cards[3], cards[4]);
+    }
+
+    
+    static generateThreeOfAKind(ranksCount) {
+        var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
+        var secondRank = Rank.NONE;
+        var index = 1;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] == 1) {
+                cards[index] = i%13 + 1;
+                index++;
+            }
+            if (ranksCount[i%13] == 3) {
+                cards[0] = i%13 + 1;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.THREE_OF_A_KIND, cards[0], cards[1], cards[2], cards[3], cards[4]);
+    }
+    
+    static generateStraight(ranksCount) {
+        var leadingRank = Rank.NONE;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] == 1) {
+                leadingRank = i%13 + 1;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.STRAIGHT, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
+    }
+    
+    static generateStraightFlush(ranksCount) {
+        var leadingRank = Rank.NONE;
+        for (var i=13; i>0; i--) {
+            if (ranksCount[i%13] == 1) {
+                leadingRank = i%13 + 1;
+            }
+        }
+
+        return new HandRanking(HandRankingCategory.STRAIGHT_FLUSH, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
     }
 
     static getRankingFromCards(cards) {
@@ -143,40 +317,82 @@ class HandRankingAnalyzer {
         var numberOfSuits = this.getNumberOfNonZero(suitsCount);
         var numberOfRanks = this.getNumberOfNonZero(ranksCount);
         var maxRankCount = this.getMaxCount(ranksCount);
-        var maxRankCombo = this.getMaxCombo(ranksCount);
+        var maxRankCombo = this.getMaxRankCombo(ranksCount);
 
         if (numberOfSuits == 1 && numberOfRanks == 5 && maxRankCombo == 5) {
             // STRAIGHT_FLUSH or ROYAL_FLUSH
-            return "STRAIGHT FLUSH";
+            if (cards[0].suit == Suit.DIAMOND && ranksCount[0] == 1) {
+                return new HandRanking(HandRankingCategory.ROYAL_FLUSH)
+            } else {
+                return this.generateStraightFlush(ranksCount);
+            }
         } else if (numberOfRanks == 2) {
             if (maxRankCount == 4) {
                 // FOUR_OF_A_KIND
-                return "FOUR OF A KIND";
+                return this.generateFourOfAKind(ranksCount);
             } else {
                 // FULL_HOUSE
-                return "FULL HOUSE";
+                return this.generateFullHouse(ranksCount);
             }
         } else if (numberOfSuits == 1) {
             // FLUSH
-            return "FLUSH";
+            return this.generateFlush(ranksCount);
         } else if (maxRankCombo == 5) {
             // STRAIGHT
-            return "STRAIGHT";
+            return this.generateStraight(ranksCount);
         } else if (numberOfRanks == 3) {
             if (maxRankCount == 3) {
                 // THREE_OF_A_KIND
-                return "THREE OF A KIND";
+                return this.generateThreeOfAKind(ranksCount);
             } else {
                 // TWO_PAIRS
-                return "TWO PAIRS";
+                return this.generateTwoPairs(ranksCount);
             }
         } else if (numberOfRanks == 4) {
             // PAIRS
-            return "PAIRS";
+            return this.generatePair(ranksCount);
         } else {
             // HIGH_CARD
-            return "HIGH CARD";
+            return this.generateHighCard(ranksCount);
         }
+    }
+
+    static selectBestCards(cards)
+    {
+        var result = {results:[]};
+        this.selectCards(cards, 5, [], result);
+
+        var maxRankValue = 0;
+        var maxHandRanking = {};
+        var maxRankCards = [];
+
+        for (var cards of result.results) {
+            var handRanking = this.getRankingFromCards(cards);
+            var cardValue = handRanking.toInteger();
+            if (cardValue > maxRankValue) {
+                maxRankCards = cards;
+                maxRankValue = cardValue;
+                maxHandRanking = handRanking;
+            }
+        }
+
+        return maxRankCards;
+    }
+    
+    static selectCards(cards, remain, selected, result)
+    {
+        if (remain == 0) {
+            result.results.push(selected);
+            return;
+        }
+        if (cards.length == 0) {
+            return;
+        }
+
+        var newSelected = selected.slice();
+        newSelected.push(cards[0]);
+        this.selectCards(cards.slice(1), remain-1, newSelected, result)
+        this.selectCards(cards.slice(1), remain, selected, result)
     }
 }
 
@@ -185,31 +401,33 @@ class PokerEngine {
     }
 
     static createDeck () {
+        var deck = [];
         for (var rank=1; rank <= 13; rank++) {
             for (var suit=1; suit<= 4; suit++) {
-                var c = new PokerCard(suit, rank);
-                console.log(c.toString())
+                var c = new Card(suit, rank);
+                deck.push(c);
             }
         }
+
+        return deck;
     }
 
-    
     static getRankingFromCards(cards) {
         return HandRankingAnalyzer.getRankingFromCards(cards);
     }
+
+    static selectBestCards(cards) {
+        return HandRankingAnalyzer.selectBestCards(cards);
+    }
 }
 
-var cards = [
-    new PokerCard(PokerSuit.DIAMOND, PokerRank.JACK),
-    new PokerCard(PokerSuit.CLUB, PokerRank.JACK),
-    new PokerCard(PokerSuit.DIAMOND, PokerRank.JACK),
-    new PokerCard(PokerSuit.HEART, PokerRank.JACK),
-    new PokerCard(PokerSuit.DIAMOND, PokerRank.QUEEN)
-]
 
-
-
-PokerEngine.createDeck();
-console.log(
-    PokerEngine.getRankingFromCards(cards)
-)
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = function ()
+    {
+        this.PokerEngine = PokerEngine;
+        this.Suit = Suit;
+        this.Card = Card;
+        this.Rank = Rank;
+    };
+}
