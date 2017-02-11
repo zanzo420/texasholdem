@@ -1,4 +1,5 @@
 // A very simple test framework
+// Usage:
 // new Test("Sample Test", function () {
 //     var v1 = 1;
 //     var v2 = 1;
@@ -30,7 +31,15 @@ class Test {
     }
 
     areEqual(obj1, obj2, message = "") {
-        if (obj1 != obj2) {
+        var equal = false;
+
+        if (obj1 instanceof Array && obj2 instanceof Array) {
+            equal = areArraysEqual(obj1, obj2);
+        } else {
+            equal = (obj1 == obj2)
+        }
+
+        if (!equal) {
             this.success = false;
             if (message != "") {
                 console.error(message);
@@ -50,6 +59,12 @@ class Test {
             }
         }
     }
+
+}
+
+// a private function to compare two arrays
+function areArraysEqual(a1, a2) {
+    return a1.length==a2.length && a1.every((v,i)=> v === a2[i]);
 }
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {

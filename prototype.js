@@ -1,21 +1,26 @@
 // https://en.wikipedia.org/wiki/Standard_52-card_deck
 
+// Card class
 class Card {
+    // Contains a suit and a rank
     constructor(suit, rank) {
         this.suit = suit;
         this.rank = rank;
     }
 
+    // A Card has an unique id.
+    toInteger() {
+        return this.suit * 16 + this.rank;
+    }
+
+    // To an unique code string
     toString() {
         // \u{1F0A0} == \uD83C\uDCA0
         return String.fromCharCode(0xD83C) + String.fromCharCode(0xDC90 + this.toInteger());
     }
-
-    toInteger() {
-        return this.suit * 16 + this.rank;
-    }
 }
 
+// Suit enum
 const Suit = {
     NONE: 0,
     SPADE: 1,
@@ -24,6 +29,7 @@ const Suit = {
     CLUB: 4,
 }
 
+// Rank enum
 const Rank = {
     NONE: 0,
     ACE: 1,
@@ -41,14 +47,15 @@ const Rank = {
     KING: 13
 }
 
+// HandRankingCategory enum
 const HandRankingCategory = {
     // 5 ranks, >1 suits
     HIGH_CARD: 0,
     // 4 ranks, >1 suits
     PAIR: 1,
-    // 3 ranks, >1 suits, 2 equal
+    // 3 ranks, >1 suits, 2 equals
     TWO_PAIRS: 2,
-    // 3 ranks, >1 suits, 3 equal
+    // 3 ranks, >1 suits, 3 equals
     THREE_OF_A_KIND: 3,
     // 5 ranks, >1 suits, 5 combos
     STRAIGHT: 4,
@@ -64,6 +71,7 @@ const HandRankingCategory = {
     ROYAL_FLUSH: 9
 }
 
+// HandRanking class
 class HandRanking {
     constructor(category,
             leadingRank = Rank.NONE,
@@ -76,6 +84,7 @@ class HandRanking {
         this.ranks = [leadingRank,secondRank,thirdRank,forthRank,fifthRank];
     }
 
+    // A comparable value
     toInteger() {
         return this.category * 0xF00000
         + this.getRankWeight(this.ranks[0]) * 0x010000
@@ -85,6 +94,7 @@ class HandRanking {
         + this.getRankWeight(this.ranks[4]);
     }
 
+    // The weight of a single card
     getRankWeight(rank) {
         if (rank == Rank.ACE) {
             return rank+13;
@@ -92,6 +102,7 @@ class HandRanking {
         return rank;
     }
 
+    // To human readable string (maybe move to a special class)
     toString() {
         switch(this.category) {
             case HandRankingCategory.HIGH_CARD:
@@ -118,8 +129,10 @@ class HandRanking {
     }
 }
 
+// The static class to analyze hand cards.
+// Need refactoring
 class HandRankingAnalyzer {
-
+    // Find non-zero counts
     static getNumberOfNonZero(counts) {
         var numberOfNonZero = 0;
 
@@ -132,6 +145,7 @@ class HandRankingAnalyzer {
         return numberOfNonZero;
     }
 
+    // Find max count
     static getMaxCount(counts) {
         var maxCount = 0;
 
@@ -144,6 +158,8 @@ class HandRankingAnalyzer {
         return maxCount;
     }
 
+    // Find max rank combo, combo means things like '2,3,4' (3 combo) or '10,J,Q,K' (4 combo)
+    // K-A can be combe, A-2 can be combo, but 'K,A,2' is not 3 combo
     static getMaxRankCombo(suitsCount) {
         var maxCombo = 0;
         var combo = 0;
@@ -170,6 +186,7 @@ class HandRankingAnalyzer {
         return maxCombo;
     }
 
+    // generate a specific handranking 
     static generateFourOfAKind(ranksCount) {
         var leadingRank = Rank.NONE;
         var secondRank = Rank.NONE;
@@ -186,6 +203,7 @@ class HandRankingAnalyzer {
         return new HandRanking(HandRankingCategory.FOUR_OF_A_KIND, leadingRank, secondRank);
     }
 
+    // generate a specific handranking 
     static generateHighCard(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
         var secondRank = Rank.NONE;
@@ -200,6 +218,7 @@ class HandRankingAnalyzer {
         return new HandRanking(HandRankingCategory.HIGH_CARD, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
+    // generate a specific handranking 
     static generatePair(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
         var secondRank = Rank.NONE;
@@ -217,6 +236,7 @@ class HandRankingAnalyzer {
         return new HandRanking(HandRankingCategory.PAIR, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
+    // generate a specific handranking 
     static generateTwoPairs(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
         var secondRank = Rank.NONE;
@@ -236,6 +256,7 @@ class HandRankingAnalyzer {
         return new HandRanking(HandRankingCategory.TWO_PAIRS, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
+    // generate a specific handranking 
     static generateFlush(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
         var secondRank = Rank.NONE;
@@ -250,6 +271,7 @@ class HandRankingAnalyzer {
         return new HandRanking(HandRankingCategory.FLUSH, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
+    // generate a specific handranking 
     static generateFullHouse(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
         var secondRank = Rank.NONE;
@@ -265,7 +287,7 @@ class HandRankingAnalyzer {
         return new HandRanking(HandRankingCategory.FULL_HOUSE, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
-    
+    // generate a specific handranking 
     static generateThreeOfAKind(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
         var secondRank = Rank.NONE;
@@ -283,28 +305,33 @@ class HandRankingAnalyzer {
         return new HandRanking(HandRankingCategory.THREE_OF_A_KIND, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
     
+    // generate a specific handranking 
     static generateStraight(ranksCount) {
         var leadingRank = Rank.NONE;
         for (var i=13; i>0; i--) {
             if (ranksCount[i%13] == 1) {
                 leadingRank = i%13 + 1;
+                break;
             }
         }
 
         return new HandRanking(HandRankingCategory.STRAIGHT, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
     }
     
+    // generate a specific handranking 
     static generateStraightFlush(ranksCount) {
         var leadingRank = Rank.NONE;
         for (var i=13; i>0; i--) {
             if (ranksCount[i%13] == 1) {
                 leadingRank = i%13 + 1;
+                break;
             }
         }
 
         return new HandRanking(HandRankingCategory.STRAIGHT_FLUSH, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
     }
 
+    // generate a handranking from 5 cards
     static getRankingFromCards(cards) {
         var suitsCount = [0,0,0,0];
         var ranksCount = [0,0,0,0,0,0,0,0,0,0,0,0,0];
@@ -357,6 +384,7 @@ class HandRankingAnalyzer {
         }
     }
 
+    // find best 5 cards from >5 cards
     static selectBestCards(cards)
     {
         var result = {results:[]};
@@ -379,6 +407,8 @@ class HandRankingAnalyzer {
         return maxRankCards;
     }
     
+    // A resursive help function for selectBestCards.
+    // This function will pick {remain} more cards from {cards}, and put them in {result}, the selected cards will be put in {selected}. 
     static selectCards(cards, remain, selected, result)
     {
         if (remain == 0) {
@@ -396,6 +426,7 @@ class HandRankingAnalyzer {
     }
 }
 
+// The engine class, the entrance of most features.
 class PokerEngine {
     constructor() {
     }
