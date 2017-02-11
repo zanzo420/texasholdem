@@ -1,12 +1,14 @@
+require ('./test.js')();
 require ('../prototype.js')();
 
 // test case
-(function() {
-    console.log(PokerEngine.createDeck());
-})();
+new Test("PokerEngine Create Deck Test", function() {
+    var deck = PokerEngine.createDeck();
+    this.areEqual(deck.length, 52);
+});
 
 // test case
-(function() {
+new Test("HandRankingCategory.FOUR_OF_A_KIND Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.JACK),
         new Card(Suit.CLUB, Rank.JACK),
@@ -15,13 +17,12 @@ require ('../prototype.js')();
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
 
-    var hankrank = PokerEngine.getRankingFromCards(cards);
-    console.log(hankrank);
-    console.log(hankrank.toInteger());
-})();
+    var handranking = PokerEngine.getRankingFromCards(cards);
+    this.areEqual(handranking.category, HandRankingCategory.FOUR_OF_A_KIND)
+});
 
 // test case
-(function() {
+new Test("HandRankingCategory.HIGH_CARD Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.CLUB, Rank.RANK2),
@@ -30,10 +31,9 @@ require ('../prototype.js')();
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
 
-    var hankrank = PokerEngine.getRankingFromCards(cards);
-    console.log(hankrank);
-    console.log(hankrank.toInteger());
-})();
+    var handranking = PokerEngine.getRankingFromCards(cards);
+    this.areEqual(handranking.category, HandRankingCategory.HIGH_CARD)
+});
 
 // test case
 (function() {

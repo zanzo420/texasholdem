@@ -429,5 +429,7 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
         this.Suit = Suit;
         this.Card = Card;
         this.Rank = Rank;
+        this.HandRanking = HandRanking;
+        this.HandRankingCategory = HandRankingCategory;
     };
 }
