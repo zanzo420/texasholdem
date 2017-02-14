@@ -174,3 +174,52 @@ new Test("PokerEngine.selectBestCards ROYAL_FLUSH Test", function() {
     this.areEqual(handranking.ranks, [Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE]);
 });
 
+// test case
+new Test("PokerEngine GameSteps Test", function() {
+    let engine = new PokerEngine();
+    let players = [new Player(),new Player(),new Player()];
+    GameStepHelper.givePlayerCards(engine, players);
+});
+
+
+function printCards(cards) {
+    let cardString = "";
+    for (let card of cards) {
+        cardString += card.toString();
+    }
+    console.log(cardString)
+}
+
+// test case
+new Test("PokerEngine GameSteps Test", function() {
+    let engine = new PokerEngine();
+    let players = [new Player(),new Player(),new Player()];
+    while (engine.step != GameStep.END) {
+        engine.step = GameStepHelper.moveToNextStep(engine, players);
+    }
+    printCards(engine.sharedCards);
+
+    for(let player of players) {
+        let cards = [];
+        printCards(player.handcards);
+        cards = cards.concat(player.handcards, engine.sharedCards)
+        player.handranking = PokerEngine.getRankingFromCards(cards);
+    }
+
+    let biggestRanking = null;
+    let winner = null;
+    for(let player of players) {
+        if (biggestRanking == null) {
+            biggestRanking = player.handranking;
+            winner = player;
+        } else if (player.handranking.toInteger() > biggestRanking.toInteger()) {
+            biggestRanking = player.handranking;
+            winner = player;
+        }
+    }
+
+    console.log(winner);
+    console.log(biggestRanking);
+});
+
+

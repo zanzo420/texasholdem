@@ -27,7 +27,7 @@ const Suit = {
     HEART: 2,
     DIAMOND: 3,
     CLUB: 4,
-}
+};
 
 // Rank enum
 const Rank = {
@@ -45,7 +45,7 @@ const Rank = {
     JACK: 11,
     QUEEN: 12,
     KING: 13
-}
+};
 
 // HandRankingCategory enum
 const HandRankingCategory = {
@@ -69,7 +69,7 @@ const HandRankingCategory = {
     STRAIGHT_FLUSH: 8,
     // 5 ranks, 1 suit, 5 combos and DIAMOND and ACE leading
     ROYAL_FLUSH: 9
-}
+};
 
 // HandRanking class
 class HandRanking {
@@ -426,9 +426,138 @@ class HandRankingAnalyzer {
     }
 }
 
+// Rank enum
+const GameStep = {
+    NONE: 0,
+    BLINDBID: 1,
+    PREFLOP: 2,
+    FLOP: 3,
+    TURN: 4,
+    RIVER: 5,
+    SHOWDOWN: 6,
+    END: 7
+};
+
+// Rank enum
+const BidType = {
+    NONE: 0,
+    RAISE: 1,
+    FOLLOW: 2,
+    QUIT: 2
+};
+
+
+class GameStepHelper {
+    static moveToNextStep(engine, players) {
+        let step = engine.step;
+        // first is holder, 2 player at least, first is holder
+        switch(step) {
+            case GameStep.NONE:
+                // PREPARE
+                // TODO
+                return GameStep.BLINDBID;
+            case GameStep.BLINDBID:
+                // BLIND BID
+                this.fourceBid(players[1], 1);
+                this.fourceBid(players[2 % players.length], 2);
+                return GameStep.PREFLOP;
+            case GameStep.PREFLOP:
+                this.givePlayerCards(engine, players);
+                this.givePlayerCards(engine, players);
+                // PREFLOP BID
+                this.runBids(engine, players);
+                return GameStep.FLOP;
+            case GameStep.FLOP:
+                this.showSharedCard(engine);
+                this.showSharedCard(engine);
+                this.showSharedCard(engine);
+                // FLOP BID
+                this.runBids(engine, players);
+                return GameStep.TURN;
+            case GameStep.TURN:
+                this.showSharedCard(engine);
+                // TURN BID
+                this.runBids(engine, players);
+                return GameStep.RIVER;
+            case GameStep.RIVER:
+                this.showSharedCard(engine);
+                // RIVER BID
+                this.runBids(engine, players);
+                return GameStep.SHOWDOWN;
+            case GameStep.SHOWDOWN:
+                // PAY
+                return GameStep.END;
+        }
+    }
+
+    static givePlayerCards(engine, players) {
+        for (let player of players) {
+            let card = engine.deck.pop();
+            player.handcards.push(card);
+        }
+    }
+
+    static fourceBid(player, numberOfBid) {
+    }
+
+    static waitForBid(player) {
+        return new Bid(BidType.FOLLOW, 0);
+    }
+
+    static showSharedCard(engine) {
+        let card = engine.deck.pop();
+        engine.sharedCards.push(card);
+    }
+
+    static runBids(engine, players) {
+        while (true) {
+            let allBided = false;
+            let comboNoRaise = 0;
+            let endBid = false;
+            for (let player of players) {
+                let bid = this.waitForBid(player);
+                if (bid.type == BidType.RAISE) {
+                    comboNoRaise = 0;
+                } else {
+                    // quit or follow
+                    comboNoRaise ++;
+                }
+                if ((comboNoRaise >= players.length - 1) && allBided) {
+                    endBid = true;
+                    break;
+                }
+
+                allBided = true;
+            }
+            
+            if (endBid) {
+                break;
+            }
+        }
+    }
+}
+
+
+class Bid {
+    constructor(type, size) {
+        this.type = type;
+        this.size = size;
+    }
+}
+
+
+class Player {
+    constructor() {
+        this.handcards = [];
+    }
+}
+
 // The engine class, the entrance of most features.
 class PokerEngine {
     constructor() {
+        this.deck = PokerEngine.createDeck ();
+        this.step = GameStep.NONE;
+        this.sharedCards = [];
     }
 
     static createDeck () {
@@ -452,9 +581,8 @@ class PokerEngine {
     }
 }
 
-
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-    module.exports = function ()
+    module.exports = exports = function ()
     {
         this.PokerEngine = PokerEngine;
         this.Suit = Suit;
@@ -462,5 +590,8 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
         this.Rank = Rank;
         this.HandRanking = HandRanking;
         this.HandRankingCategory = HandRankingCategory;
+        this.Player = Player;
+        this.GameStepHelper = GameStepHelper;
+        this.GameStep = GameStep;
     };
 }
