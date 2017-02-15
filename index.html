@@ -26,7 +26,7 @@ angular.module('PokerApp', [])
 function getCardsString(cards) {
     let cardsString = "";
     for (let card of cards) {
-        cardsString += card.toString();
+        cardsString += card.unicode;
     }
     return cardsString;
 }
@@ -47,7 +47,7 @@ function StageCtrl ($scope) {
         cards = cards.concat(player.handcards, engine.sharedCards)
         cards = PokerEngine.selectBestCards(cards);
         player.handranking = PokerEngine.getRankingFromCards(cards);
-        $scope.players.push({handcards:getCardsString(player.handcards), name:player.name, id:player.id, handranking:player.handranking.toString(), winner:false});
+        $scope.players.push({handcards:getCardsString(player.handcards), name:player.name, id:player.id, handranking:HandUtils.getHandName(player.handranking), winner:false});
     }
 
     let biggestRanking = null;
@@ -56,7 +56,7 @@ function StageCtrl ($scope) {
         if (biggestRanking == null) {
             biggestRanking = player.handranking;
             winner = player;
-        } else if (player.handranking.toInteger() > biggestRanking.toInteger()) {
+        } else if (player.handranking.weight > biggestRanking.weight) {
             biggestRanking = player.handranking;
             winner = player;
         }

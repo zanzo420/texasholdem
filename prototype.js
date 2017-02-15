@@ -1,35 +1,122 @@
 // https://en.wikipedia.org/wiki/Standard_52-card_deck
 
-// Card class
+
+/**
+ * Poker card class.
+ */
 class Card {
-    // Contains a suit and a rank
     constructor(suit, rank) {
-        this.suit = suit;
-        this.rank = rank;
+        this.suit_ = suit;
+        this.rank_ = rank;
     }
 
-    // A Card has an unique id.
-    toInteger() {
-        return this.suit * 16 + this.rank;
-    }
+    get suit() { return this.suit_; }
 
-    // To an unique code string
-    toString() {
+    get rank() { return this.rank_; }
+
+    get id() { return this.suit_ * 16 + this.rank_; }
+
+    get name() { return CardUtils.getCardName(this); }
+
+    get unicode() {
         // \u{1F0A0} == \uD83C\uDCA0
-        return String.fromCharCode(0xD83C) + String.fromCharCode(0xDC90 + this.toInteger());
+        return String.fromCharCode(0xD83C) + String.fromCharCode(0xDC90 + this.id);
     }
 }
 
-// Suit enum
+class CardUtils {
+
+    static getSuitName(suit) {
+        switch (suit) {
+            case Suit.SPADE:
+                return 'Spade';
+            case Suit.HEART:
+                return 'Heart';
+            case Suit.DIAMOND:
+                return 'Diamond';
+            case Suit.CLUB:
+                return 'Club';
+            case Suit.NONE:
+            default:
+                return 'UnKnown';
+        }
+    }
+
+    static getRankName(suit) {
+        switch (suit) {
+            case Suit.ACE:
+                return 'Ace';
+            case Suit.RANK2:
+                return 'Rank2';
+            case Suit.RANK3:
+                return 'Rank3';
+            case Suit.RANK4:
+                return 'Rank4';
+            case Suit.RANK5:
+                return 'Rank5';
+            case Suit.RANK6:
+                return 'Rank6';
+            case Suit.RANK7:
+                return 'Rank7';
+            case Suit.RANK8:
+                return 'Rank8';
+            case Suit.RANK9:
+                return 'Rank9';
+            case Suit.RANK10:
+                return 'Rank10';
+            case Suit.JACK:
+                return 'Jack';
+            case Suit.QUEEN:
+                return 'Queen';
+            case Suit.KING:
+                return 'King';
+            case Suit.NONE:
+            default:
+                return 'UnKnown';
+        }
+    }
+
+    static getCardFromId(id) {
+        return new Card(Math.floor(id/16), id%16);
+    }
+
+    static getCardName(card) {
+        return card.suit + ' ' + card.rank;
+    }
+
+    static getCardWeight(card) {
+        return this.getRankWeight(card.rank);
+    }
+
+    static getRankWeight(rank) {
+        if (rank < Rank.ACE && rank > Rank.KING) {
+            return 0;
+        }
+
+        if (rank == Rank.ACE) {
+            return rank + 13;
+        }
+
+        return rank;
+    }
+}
+
+/**
+ * Poker suits.
+ * @enum {number}
+ */
 const Suit = {
     NONE: 0,
     SPADE: 1,
     HEART: 2,
     DIAMOND: 3,
-    CLUB: 4,
+    CLUB: 4
 };
 
-// Rank enum
+/**
+ * Poker ranks.
+ * @enum {number}
+ */
 const Rank = {
     NONE: 0,
     ACE: 1,
@@ -47,83 +134,74 @@ const Rank = {
     KING: 13
 };
 
-// HandRankingCategory enum
-const HandRankingCategory = {
-    // 5 ranks, >1 suits
+/**
+ * Texas hold 'em hand ranks.
+ * @enum {number}
+ */
+const HandRank = {
     HIGH_CARD: 0,
-    // 4 ranks, >1 suits
     PAIR: 1,
-    // 3 ranks, >1 suits, 2 equals
     TWO_PAIRS: 2,
-    // 3 ranks, >1 suits, 3 equals
     THREE_OF_A_KIND: 3,
-    // 5 ranks, >1 suits, 5 combos
     STRAIGHT: 4,
-    // * ranks, 1 suit
     FLUSH: 5,
-    // 2 ranks
     FULL_HOUSE: 6,
-    // 2 ranks
     FOUR_OF_A_KIND: 7,
-    // 5 ranks, 1 suit, 5 combos
     STRAIGHT_FLUSH: 8,
-    // 5 ranks, 1 suit, 5 combos and DIAMOND and ACE leading
     ROYAL_FLUSH: 9
 };
 
-// HandRanking class
-class HandRanking {
-    constructor(category,
+/**
+ * Texas hold 'em hand.
+ */
+class Hand {
+    constructor(handRank,
             leadingRank = Rank.NONE,
             secondRank = Rank.NONE,
             thirdRank = Rank.NONE,
             forthRank = Rank.NONE,
             fifthRank = Rank.NONE) {
 
-        this.category = category;
-        this.ranks = [leadingRank,secondRank,thirdRank,forthRank,fifthRank];
+        this.handRank_ = handRank;
+        this.ranks_ = [leadingRank, secondRank, thirdRank, forthRank, fifthRank];
     }
 
-    // A comparable value
-    toInteger() {
-        return this.category * 0xF00000
-        + this.getRankWeight(this.ranks[0]) * 0x010000
-        + this.getRankWeight(this.ranks[1]) * 0x001000
-        + this.getRankWeight(this.ranks[2]) * 0x000100
-        + this.getRankWeight(this.ranks[3]) * 0x000010
-        + this.getRankWeight(this.ranks[4]);
-    }
+    get ranks() { return this.ranks_; }
 
-    // The weight of a single card
-    getRankWeight(rank) {
-        if (rank == Rank.ACE) {
-            return rank+13;
-        }
-        return rank;
-    }
+    get handRank() { return this.handRank_; }
 
-    // To human readable string (maybe move to a special class)
-    toString() {
-        switch(this.category) {
-            case HandRankingCategory.HIGH_CARD:
+    get weight() {
+        return this.handRank * 0xF00000
+        + CardUtils.getRankWeight(this.ranks[0]) * 0x010000
+        + CardUtils.getRankWeight(this.ranks[1]) * 0x001000
+        + CardUtils.getRankWeight(this.ranks[2]) * 0x000100
+        + CardUtils.getRankWeight(this.ranks[3]) * 0x000010
+        + CardUtils.getRankWeight(this.ranks[4]);
+    }
+}
+
+class HandUtils {
+    static getHandName(hand) {
+        switch(hand.handRank) {
+            case HandRank.HIGH_CARD:
                 return "High Card";
-            case HandRankingCategory.PAIR:
+            case HandRank.PAIR:
                 return "Pairs";
-            case HandRankingCategory.TWO_PAIRS:
+            case HandRank.TWO_PAIRS:
                 return "Tow Pairs";
-            case HandRankingCategory.THREE_OF_A_KIND:
+            case HandRank.THREE_OF_A_KIND:
                 return "Three of a Kind";
-            case HandRankingCategory.STRAIGHT:
+            case HandRank.STRAIGHT:
                 return "Straight";
-            case HandRankingCategory.FLUSH:
+            case HandRank.FLUSH:
                 return "Flush";
-            case HandRankingCategory.FULL_HOUSE:
+            case HandRank.FULL_HOUSE:
                 return "Full House";
-            case HandRankingCategory.FOUR_OF_A_KIND:
+            case HandRank.FOUR_OF_A_KIND:
                 return "Four of a Kind";
-            case HandRankingCategory.STRAIGHT_FLUSH:
+            case HandRank.STRAIGHT_FLUSH:
                 return "Straight Flush";
-            case HandRankingCategory.ROYAL_FLUSH:
+            case HandRank.ROYAL_FLUSH:
                 return "Royal Flush";
         }
     }
@@ -200,7 +278,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.FOUR_OF_A_KIND, leadingRank, secondRank);
+        return new Hand(HandRank.FOUR_OF_A_KIND, leadingRank, secondRank);
     }
 
     // generate a specific handranking 
@@ -215,7 +293,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.HIGH_CARD, cards[0], cards[1], cards[2], cards[3], cards[4]);
+        return new Hand(HandRank.HIGH_CARD, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
     // generate a specific handranking 
@@ -233,7 +311,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.PAIR, cards[0], cards[1], cards[2], cards[3], cards[4]);
+        return new Hand(HandRank.PAIR, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
     // generate a specific handranking 
@@ -253,7 +331,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.TWO_PAIRS, cards[0], cards[1], cards[2], cards[3], cards[4]);
+        return new Hand(HandRank.TWO_PAIRS, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
     // generate a specific handranking 
@@ -268,7 +346,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.FLUSH, cards[0], cards[1], cards[2], cards[3], cards[4]);
+        return new Hand(HandRank.FLUSH, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
     // generate a specific handranking 
@@ -284,7 +362,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.FULL_HOUSE, cards[0], cards[1], cards[2], cards[3], cards[4]);
+        return new Hand(HandRank.FULL_HOUSE, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
     // generate a specific handranking 
@@ -302,7 +380,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.THREE_OF_A_KIND, cards[0], cards[1], cards[2], cards[3], cards[4]);
+        return new Hand(HandRank.THREE_OF_A_KIND, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
     
     // generate a specific handranking 
@@ -315,7 +393,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.STRAIGHT, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
+        return new Hand(HandRank.STRAIGHT, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
     }
     
     // generate a specific handranking 
@@ -328,7 +406,7 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new HandRanking(HandRankingCategory.STRAIGHT_FLUSH, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
+        return new Hand(HandRank.STRAIGHT_FLUSH, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
     }
 
     // generate a handranking from 5 cards
@@ -349,7 +427,7 @@ class HandRankingAnalyzer {
         if (numberOfSuits == 1 && numberOfRanks == 5 && maxRankCombo == 5) {
             // STRAIGHT_FLUSH or ROYAL_FLUSH
             if (cards[0].suit == Suit.DIAMOND && ranksCount[0] == 1) {
-                return new HandRanking(HandRankingCategory.ROYAL_FLUSH)
+                return new Hand(HandRank.ROYAL_FLUSH)
             } else {
                 return this.generateStraightFlush(ranksCount);
             }
@@ -396,7 +474,7 @@ class HandRankingAnalyzer {
 
         for (var cards of result.results) {
             var handRanking = this.getRankingFromCards(cards);
-            var cardValue = handRanking.toInteger();
+            var cardValue = handRanking.weight;
             if (cardValue > maxRankValue) {
                 maxRankCards = cards;
                 maxRankValue = cardValue;
@@ -419,10 +497,10 @@ class HandRankingAnalyzer {
             return;
         }
 
-        var newSelected = selected.slice();
+        let newSelected = selected.slice();
         newSelected.push(cards[0]);
-        this.selectCards(cards.slice(1), remain-1, newSelected, result)
-        this.selectCards(cards.slice(1), remain, selected, result)
+        this.selectCards(cards.slice(1), remain-1, newSelected, result);
+        this.selectCards(cards.slice(1), remain, selected, result);
     }
 }
 
@@ -574,7 +652,7 @@ class Player {
     }
 
     doBlindBet(num) {
-        this.makeBet(num)
+        this.makeBet(num);
 
         return new Bet(BetType.FOLLOW, num);
     }
@@ -602,10 +680,10 @@ class PokerEngine {
     }
 
     static createDeck () {
-        var deck = [];
-        for (var rank=1; rank <= 13; rank++) {
-            for (var suit=1; suit<= 4; suit++) {
-                var c = new Card(suit, rank);
+        let deck = [];
+        for (let rank=1; rank <= 13; rank++) {
+            for (let suit=1; suit<= 4; suit++) {
+                let c = new Card(suit, rank);
                 deck.push(c);
             }
         }
@@ -634,16 +712,17 @@ class PokerEngine {
 }
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-    module.exports = exports = function ()
-    {
-        this.PokerEngine = PokerEngine;
-        this.Suit = Suit;
-        this.Card = Card;
-        this.Rank = Rank;
-        this.HandRanking = HandRanking;
-        this.HandRankingCategory = HandRankingCategory;
-        this.Player = Player;
-        this.GameStepHelper = GameStepHelper;
-        this.GameStep = GameStep;
+    module.exports = exports = {
+        CardUtils : CardUtils,
+        HandUtils: HandUtils,
+        PokerEngine : PokerEngine,
+        Suit : Suit,
+        Card : Card,
+        Rank : Rank,
+        Hand : Hand,
+        HandRank : HandRank,
+        Player : Player,
+        GameStepHelper : GameStepHelper,
+        GameStep : GameStep
     };
 }

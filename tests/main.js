@@ -1,5 +1,30 @@
-require ('./test.js')();
-require ('../prototype.js')();
+var test = require ('./test.js');
+let Test = test.Test;
+
+var prototype = require ('../prototype.js');
+let CardUtils = prototype.CardUtils;
+let HandUtils = prototype.HandUtils;
+let PokerEngine = prototype.PokerEngine;
+let Suit = prototype.Suit;
+let Card = prototype.Card;
+let Rank = prototype.Rank;
+let Hand = prototype.Hand;
+let HandRank = prototype.HandRank;
+let Player = prototype.Player;
+let GameStepHelper = prototype.GameStepHelper;
+let GameStep = prototype.GameStep;
+
+
+// test case
+new Test("Card Id Test", function() {
+    for (let rank=1; rank <= 13; rank++) {
+        for (let suit=1; suit<= 4; suit++) {
+            let c1 = new Card(suit, rank);
+            let c2 = CardUtils.getCardFromId(c1.id);
+            this.areEqual(c1.id, c2.id)
+        }
+    }
+});
 
 // test case
 new Test("PokerEngine Create Deck Test", function() {
@@ -17,7 +42,7 @@ new Test("PokerEngine.getRankingFromCards FOUR_OF_A_KIND Test", function() {
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.FOUR_OF_A_KIND)
+    this.areEqual(handranking.handRank, HandRank.FOUR_OF_A_KIND)
 });
 
 // test case
@@ -30,7 +55,7 @@ new Test("PokerEngine.getRankingFromCards HIGH_CARD Test", function() {
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.HIGH_CARD)
+    this.areEqual(handranking.handRank, HandRank.HIGH_CARD)
 });
 
 // test case
@@ -43,7 +68,7 @@ new Test("PokerEngine.getRankingFromCards PAIR Test", function() {
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.PAIR)
+    this.areEqual(handranking.handRank, HandRank.PAIR)
 });
 
 // test case
@@ -56,7 +81,7 @@ new Test("PokerEngine.getRankingFromCards TWO_PAIRS Test", function() {
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.TWO_PAIRS)
+    this.areEqual(handranking.handRank, HandRank.TWO_PAIRS)
 });
 
 // test case
@@ -69,7 +94,7 @@ new Test("PokerEngine.getRankingFromCards ROYAL_FLUSH Test", function() {
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.ROYAL_FLUSH)
+    this.areEqual(handranking.handRank, HandRank.ROYAL_FLUSH)
 });
 
 // test case
@@ -85,7 +110,7 @@ new Test("PokerEngine.selectBestCards TWO_PAIRS Test", function() {
     ]
     var cards = PokerEngine.selectBestCards(cards);
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.TWO_PAIRS);
+    this.areEqual(handranking.handRank, HandRank.TWO_PAIRS);
     this.areEqual(handranking.ranks, [Rank.RANK8, Rank.RANK2, Rank.ACE, Rank.NONE, Rank.NONE]);
 });
 
@@ -102,7 +127,7 @@ new Test("PokerEngine.selectBestCards FLUSH Test", function() {
     ]
     var cards = PokerEngine.selectBestCards(cards);
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.FLUSH);
+    this.areEqual(handranking.handRank, HandRank.FLUSH);
     this.areEqual(handranking.ranks, [Rank.ACE, Rank.QUEEN, Rank.RANK10, Rank.RANK8, Rank.RANK2]);
 });
 
@@ -119,7 +144,7 @@ new Test("PokerEngine.selectBestCards FULL_HOUSE Test", function() {
     ]
     var cards = PokerEngine.selectBestCards(cards);
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.FULL_HOUSE);
+    this.areEqual(handranking.handRank, HandRank.FULL_HOUSE);
     this.areEqual(handranking.ranks, [Rank.RANK8, Rank.RANK2, Rank.NONE, Rank.NONE, Rank.NONE]);
 });
 
@@ -136,7 +161,7 @@ new Test("PokerEngine.selectBestCards STRAIGHT Test", function() {
     ]
     var cards = PokerEngine.selectBestCards(cards);
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.STRAIGHT);
+    this.areEqual(handranking.handRank, HandRank.STRAIGHT);
     this.areEqual(handranking.ranks, [Rank.ACE, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE]);
 });
 
@@ -153,7 +178,7 @@ new Test("PokerEngine.selectBestCards FLUSH beats STRAIGHT Test", function() {
     ]
     var cards = PokerEngine.selectBestCards(cards);
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.FLUSH);
+    this.areEqual(handranking.handRank, HandRank.FLUSH);
     this.areEqual(handranking.ranks, [Rank.ACE, Rank.KING, Rank.QUEEN, Rank.RANK10, Rank.RANK8]);
 });
 
@@ -170,25 +195,9 @@ new Test("PokerEngine.selectBestCards ROYAL_FLUSH Test", function() {
     ]
     var cards = PokerEngine.selectBestCards(cards);
     var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.category, HandRankingCategory.ROYAL_FLUSH);
+    this.areEqual(handranking.handRank, HandRank.ROYAL_FLUSH);
     this.areEqual(handranking.ranks, [Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE]);
 });
-
-// test case
-new Test("PokerEngine GameSteps Test", function() {
-    let engine = new PokerEngine();
-    let players = [new Player(),new Player(),new Player()];
-    GameStepHelper.givePlayerCards(engine, players);
-});
-
-
-function printCards(cards) {
-    let cardString = "";
-    for (let card of cards) {
-        cardString += card.toString();
-    }
-    console.log(cardString)
-}
 
 // test case
 new Test("PokerEngine GameSteps Test", function() {
@@ -198,11 +207,12 @@ new Test("PokerEngine GameSteps Test", function() {
     while (engine.step != GameStep.END) {
         engine.step = GameStepHelper.moveToNextStep(engine, players);
     }
-    printCards(engine.sharedCards);
+
+    this.isTrue(engine.sharedCards.length == 5);
 
     for(let player of players) {
+        this.isTrue(player.handcards.length == 2);
         let cards = [];
-        printCards(player.handcards);
         cards = cards.concat(player.handcards, engine.sharedCards)
         cards = PokerEngine.selectBestCards(cards);
         player.handranking = PokerEngine.getRankingFromCards(cards);
@@ -214,14 +224,11 @@ new Test("PokerEngine GameSteps Test", function() {
         if (biggestRanking == null) {
             biggestRanking = player.handranking;
             winner = player;
-        } else if (player.handranking.toInteger() > biggestRanking.toInteger()) {
+        } else if (player.handranking.weight > biggestRanking.weight) {
             biggestRanking = player.handranking;
             winner = player;
         }
     }
-
-    console.log(winner);
-    console.log(biggestRanking);
 });
 
 

@@ -68,7 +68,7 @@ function areArraysEqual(a1, a2) {
 }
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-    module.exports = exports =  function () {
-        this.Test = Test;
+    module.exports = exports = {
+        Test : Test,
     };
 }
