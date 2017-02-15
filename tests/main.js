@@ -193,6 +193,7 @@ function printCards(cards) {
 // test case
 new Test("PokerEngine GameSteps Test", function() {
     let engine = new PokerEngine();
+    engine.shuffleDeck();
     let players = [new Player(),new Player(),new Player()];
     while (engine.step != GameStep.END) {
         engine.step = GameStepHelper.moveToNextStep(engine, players);
@@ -203,6 +204,7 @@ new Test("PokerEngine GameSteps Test", function() {
         let cards = [];
         printCards(player.handcards);
         cards = cards.concat(player.handcards, engine.sharedCards)
+        cards = PokerEngine.selectBestCards(cards);
         player.handranking = PokerEngine.getRankingFromCards(cards);
     }
 

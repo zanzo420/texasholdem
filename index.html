@@ -1,73 +1,74 @@
-<html>
+<html ng-app="PokerApp">
 <head>
     <title>Texas hold 'em prototype</title>
     <script type="text/javascript" src="prototype.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
 
-<script>
-function test(cards) {
-    document.write('<div><span style="font-size: 96px;">');
-    for (var card of cards) {
-        document.write(card.toString());
-    }
-    var cards = PokerEngine.selectBestCards(cards);
-    document.write('&nbsp&nbsp');
-    var hankrank = PokerEngine.getRankingFromCards(cards);
-    document.write(hankrank.toString());
-    document.write('<span></div>');
-}
-</script>
+<div id="stage" ng-controller="StageCtrl">
+    <div id="desk">
+        <span style="font-size: 96px;">{{ sharedCards }}</span>
+    </div>
+
+    <div ng-repeat="player in players">
+        <span style="font-size: 96px;">{{player.handcards}}</span>
+        &nbsp&nbsp
+        <span style="font-size: 72px;" class="player_win_{{player.winner}}">{{player.handranking}}</span>
+    </div>
+</div>
 
 <script>
-test ([
-    new Card(Suit.DIAMOND, Rank.ACE),
-    new Card(Suit.SPADE, Rank.RANK10),
-    new Card(Suit.DIAMOND, Rank.RANK10),
-    new Card(Suit.DIAMOND, Rank.JACK),
-    new Card(Suit.DIAMOND, Rank.RANK8),
-    new Card(Suit.DIAMOND, Rank.KING),
-    new Card(Suit.DIAMOND, Rank.QUEEN)]);
-test ([
-    new Card(Suit.DIAMOND, Rank.ACE),
-    new Card(Suit.DIAMOND, Rank.RANK2),
-    new Card(Suit.CLUB, Rank.RANK10),
-    new Card(Suit.SPADE, Rank.JACK),
-    new Card(Suit.DIAMOND, Rank.RANK8),
-    new Card(Suit.HEART, Rank.KING),
-    new Card(Suit.DIAMOND, Rank.QUEEN)]);
-test ([
-    new Card(Suit.DIAMOND, Rank.ACE),
-    new Card(Suit.DIAMOND, Rank.RANK2),
-    new Card(Suit.CLUB, Rank.RANK2),
-    new Card(Suit.SPADE, Rank.RANK8),
-    new Card(Suit.DIAMOND, Rank.RANK8),
-    new Card(Suit.HEART, Rank.RANK8),
-    new Card(Suit.DIAMOND, Rank.QUEEN)]);
-test ([
-    new Card(Suit.DIAMOND, Rank.ACE),
-    new Card(Suit.DIAMOND, Rank.RANK2),
-    new Card(Suit.CLUB, Rank.RANK2),
-    new Card(Suit.SPADE, Rank.RANK8),
-    new Card(Suit.DIAMOND, Rank.RANK8),
-    new Card(Suit.DIAMOND, Rank.RANK10),
-    new Card(Suit.DIAMOND, Rank.QUEEN)]);
-test ([
-    new Card(Suit.DIAMOND, Rank.ACE),
-    new Card(Suit.DIAMOND, Rank.RANK2),
-    new Card(Suit.CLUB, Rank.RANK2),
-    new Card(Suit.SPADE, Rank.RANK8),
-    new Card(Suit.HEART, Rank.RANK8),
-    new Card(Suit.HEART, Rank.RANK10),
-    new Card(Suit.DIAMOND, Rank.QUEEN)]);
-test ([
-    new Card(Suit.DIAMOND, Rank.ACE),
-    new Card(Suit.SPADE, Rank.RANK10),
-    new Card(Suit.CLUB, Rank.RANK4),
-    new Card(Suit.SPADE, Rank.RANK4),
-    new Card(Suit.DIAMOND, Rank.RANK4),
-    new Card(Suit.HEART, Rank.RANK4),
-    new Card(Suit.DIAMOND, Rank.QUEEN)]);
+angular.module('PokerApp', [])
+  .controller('StageCtrl',StageCtrl);
+
+function getCardsString(cards) {
+    let cardsString = "";
+    for (let card of cards) {
+        cardsString += card.toString();
+    }
+    return cardsString;
+}
+
+function StageCtrl ($scope) {
+    let engine = new PokerEngine();
+    engine.shuffleDeck();
+    let players = [new Player(),new Player(),new Player(),new Player(),new Player()];
+    while (engine.step != GameStep.END) {
+        engine.step = GameStepHelper.moveToNextStep(engine, players);
+    }
+
+    $scope.sharedCards = getCardsString(engine.sharedCards);
+
+    $scope.players = []
+    for(let player of players) {
+        let cards = [];
+        cards = cards.concat(player.handcards, engine.sharedCards)
+        cards = PokerEngine.selectBestCards(cards);
+        player.handranking = PokerEngine.getRankingFromCards(cards);
+        $scope.players.push({handcards:getCardsString(player.handcards), name:player.name, id:player.id, handranking:player.handranking.toString(), winner:false});
+    }
+
+    let biggestRanking = null;
+    let winner = null;
+    for(let player of players) {
+        if (biggestRanking == null) {
+            biggestRanking = player.handranking;
+            winner = player;
+        } else if (player.handranking.toInteger() > biggestRanking.toInteger()) {
+            biggestRanking = player.handranking;
+            winner = player;
+        }
+    }
+
+    for(let player of $scope.players) {
+        if (player.id == winner.id) {
+            player.winner = true;
+        }
+    }
+}
+
 </script>
 
 </body>

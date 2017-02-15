@@ -426,10 +426,10 @@ class HandRankingAnalyzer {
     }
 }
 
-// Rank enum
+// GameStep enum
 const GameStep = {
     NONE: 0,
-    BLINDBID: 1,
+    ANTE: 1,
     PREFLOP: 2,
     FLOP: 3,
     TURN: 4,
@@ -438,12 +438,12 @@ const GameStep = {
     END: 7
 };
 
-// Rank enum
-const BidType = {
+// BetType enum
+const BetType = {
     NONE: 0,
     RAISE: 1,
-    FOLLOW: 2,
-    QUIT: 2
+    FOLLOW: 2, // Check/Call
+    QUIT: 3
 };
 
 
@@ -455,34 +455,34 @@ class GameStepHelper {
             case GameStep.NONE:
                 // PREPARE
                 // TODO
-                return GameStep.BLINDBID;
-            case GameStep.BLINDBID:
-                // BLIND BID
-                this.fourceBid(players[1], 1);
-                this.fourceBid(players[2 % players.length], 2);
+                return GameStep.ANTE;
+            case GameStep.ANTE:
+                // BLIND BET
+                this.blindBet(players[1], 1);
+                this.blindBet(players[2 % players.length], 2);
                 return GameStep.PREFLOP;
             case GameStep.PREFLOP:
                 this.givePlayerCards(engine, players);
                 this.givePlayerCards(engine, players);
-                // PREFLOP BID
-                this.runBids(engine, players);
+                // PREFLOP BET
+                this.runBets(engine, players);
                 return GameStep.FLOP;
             case GameStep.FLOP:
                 this.showSharedCard(engine);
                 this.showSharedCard(engine);
                 this.showSharedCard(engine);
-                // FLOP BID
-                this.runBids(engine, players);
+                // FLOP BET
+                this.runBets(engine, players);
                 return GameStep.TURN;
             case GameStep.TURN:
                 this.showSharedCard(engine);
-                // TURN BID
-                this.runBids(engine, players);
+                // TURN BET
+                this.runBets(engine, players);
                 return GameStep.RIVER;
             case GameStep.RIVER:
                 this.showSharedCard(engine);
-                // RIVER BID
-                this.runBids(engine, players);
+                // RIVER BET
+                this.runBets(engine, players);
                 return GameStep.SHOWDOWN;
             case GameStep.SHOWDOWN:
                 // PAY
@@ -497,11 +497,18 @@ class GameStepHelper {
         }
     }
 
-    static fourceBid(player, numberOfBid) {
+    static blindBet(player, numberOfBid) {
+        return player.doBlindBet(numberOfBid);
     }
 
-    static waitForBid(player) {
-        return new Bid(BidType.FOLLOW, 0);
+    static waitForBet(engine, player) {
+        let bet = player.doBet(engine.highbets);
+
+        if (engine.highbets < player.bets) {
+            engine.highbets = player.bets;
+        }
+
+        return bet;
     }
 
     static showSharedCard(engine) {
@@ -509,14 +516,14 @@ class GameStepHelper {
         engine.sharedCards.push(card);
     }
 
-    static runBids(engine, players) {
+    static runBets(engine, players) {
         while (true) {
             let allBided = false;
             let comboNoRaise = 0;
             let endBid = false;
             for (let player of players) {
-                let bid = this.waitForBid(player);
-                if (bid.type == BidType.RAISE) {
+                let bid = this.waitForBet(engine, player);
+                if (bid.type == BetType.RAISE) {
                     comboNoRaise = 0;
                 } else {
                     // quit or follow
@@ -538,7 +545,7 @@ class GameStepHelper {
 }
 
 
-class Bid {
+class Bet {
     constructor(type, size) {
         this.type = type;
         this.size = size;
@@ -547,10 +554,42 @@ class Bid {
 
 
 class Player {
-    constructor() {
+    constructor(name) {
+        this.id = Player.ids;
+        Player.ids++;
+
+        this.money = 0;
+        if (name == undefined) {
+            name = "Player " + this.id;
+        }
+        this.bets = 0;
+
+        this.name = name;
         this.handcards = [];
     }
+
+    doBet(targetNum) {
+        let num = this.makeBet(targetNum);
+        return new Bet(BetType.FOLLOW, num);
+    }
+
+    doBlindBet(num) {
+        this.makeBet(num)
+
+        return new Bet(BetType.FOLLOW, num);
+    }
+    
+    makeBet(targetNum) {
+        let num = targetNum - this.bets;
+
+        this.money -= num;
+        this.bets += num;
+
+        return num;
+    }
 }
+
+Player.ids = 0;
 
 // The engine class, the entrance of most features.
 class PokerEngine {
@@ -558,6 +597,8 @@ class PokerEngine {
         this.deck = PokerEngine.createDeck ();
         this.step = GameStep.NONE;
         this.sharedCards = [];
+        this.pot = 0;
+        this.highbets = 0;
     }
 
     static createDeck () {
@@ -578,6 +619,17 @@ class PokerEngine {
 
     static selectBestCards(cards) {
         return HandRankingAnalyzer.selectBestCards(cards);
+    }
+
+    shuffleDeck() {
+        let length = this.deck.length;
+        while (length > 0) {
+            let index = Math.floor(Math.random() * length);
+            length--;
+            let temp = this.deck[length];
+            this.deck[length] = this.deck[index];
+            this.deck[index] = temp;
+        }
     }
 }
 
