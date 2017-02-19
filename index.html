@@ -1,22 +1,96 @@
 <html ng-app="PokerApp">
 <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>Texas hold 'em prototype</title>
     <script type="text/javascript" src="prototype.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
 
+
+<!-- Fixed navbar -->
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Texas hold 'em</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="active"><a href="./">Guest</a></li>
+            </ul>
+        </div><!--/.nav-collapse -->
+    </div>
+</nav>
+
+
+<div class="container">
 <div id="stage" ng-controller="StageCtrl">
-    <div id="desk">
-        <span style="font-size: 96px;">{{ sharedCards }}</span>
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div id="desk">
+            <div ng-repeat="card in game.board" id="card_board_{{card.id}}" class="card"
+                 style="background-image: url('cards.png'); height: 112px; width: 80px;
+background-size: 1120px 560px; background-position: {{card.rank * -80}}px {{card.suit * -112}}px; display: inline-block;" >
+            </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div ng-repeat="player in game.players" class="col-md-3">
+            <div class="player_hole player_status_{{player.status}}">
+                <span style="font-size: 18px;">{{ player.name }}</span> <br />
+                <span style="font-size: 18px;">BET: {{ player.bet }}</span> <br />
+                <span style="font-size: 18px;">Bets: {{ player.bets }}</span> <br />
+                <span style="font-size: 18px;">Status: {{ getPlayerStatusName(player.status) }}</span> <br />
+                <span style="font-size: 18px;" class="player_win_{{ player.winner }}">HAND: {{ player.hand.name }}</span>
+                <div style="font-size: 128px; text-align: center;">
+                    <div ng-repeat="card in player.hole" id="card_hole_img_{{card.id}}" class="card"
+                         style="background-image: url('cards.png'); height: 112px; width: 80px;
+    background-size: 1120px 560px; background-position: {{card.rank * -80}}px {{card.suit * -112}}px; display: inline-block;" >
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div ng-repeat="player in players">
-        <span style="font-size: 96px;">{{player.handcards}}</span>
-        &nbsp&nbsp
-        <span style="font-size: 72px;" class="player_win_{{player.winner}}">{{player.handranking}}</span>
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3 text-center">
+            <div class="console">
+                <div class="row">
+                    <div class="col-xs-6 col-md-offset-2">
+                    <div class="input-group">
+                        <div class="input-group-addon">Bet</div>
+                        <input type="text" class="form-control input-lg" placeholder="min {{ game.highbets }}" value="{{ game.highbets }}" id="BetValue" >
+                        <span class="input-group-btn">
+                            <button class="btn btn-lg btn-default" ng-click="bet()" ng-disabled="currentPlayer() == null">&nbsp;Bet&nbsp;</button>
+                        </span>
+                    </div>
+                    </div>
+                    <div class="col-xs-2">
+                        <button class="btn btn-lg btn-default" ng-click="quit()" ng-disabled="currentPlayer() == null">Quit</button> <br /> <br />
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 </div>
 
 <script>
@@ -31,42 +105,71 @@ function getCardsString(cards) {
     return cardsString;
 }
 
-function StageCtrl ($scope) {
-    let engine = new PokerEngine();
-    engine.shuffleDeck();
-    let players = [new Player(),new Player(),new Player(),new Player(),new Player()];
-    while (engine.step != GameStep.END) {
-        engine.step = GameStepHelper.moveToNextStep(engine, players);
-    }
+function StageCtrl ($scope, $timeout) {
 
-    $scope.sharedCards = getCardsString(engine.sharedCards);
+    let players = [new Player(),new Player(),new Player(),new Player()];
+    let game = GameEngine.createGame(players);
 
-    $scope.players = []
-    for(let player of players) {
-        let cards = [];
-        cards = cards.concat(player.handcards, engine.sharedCards)
-        cards = PokerEngine.selectBestCards(cards);
-        player.handranking = PokerEngine.getRankingFromCards(cards);
-        $scope.players.push({handcards:getCardsString(player.handcards), name:player.name, id:player.id, handranking:HandUtils.getHandName(player.handranking), winner:false});
-    }
-
-    let biggestRanking = null;
-    let winner = null;
-    for(let player of players) {
-        if (biggestRanking == null) {
-            biggestRanking = player.handranking;
-            winner = player;
-        } else if (player.handranking.weight > biggestRanking.weight) {
-            biggestRanking = player.handranking;
-            winner = player;
+    $scope.nextMove =  function () {
+        if (game.step != GameStep.END) {
+            GameEngine.moveToNextStep(game);
+            $scope.showStage();
+            console.log(game.step);
+        } else {
+            console.error(game.step);
         }
+    };
+
+    $scope.showStage = function () {
+        console.log(game);
+        for (let player of game.players) {
+            player.win = false;
+        }
+        $scope.game = game;
+        $scope.highbets = game.highbets;
+    };
+
+    $scope.currentPlayer = function() {
+        for (let player of game.players) {
+            if (player.status == PlayerStatus.PENDING_USER) {
+                return player;
+            }
+        }
+
+        return null;
     }
 
-    for(let player of $scope.players) {
-        if (player.id == winner.id) {
-            player.winner = true;
+    $scope.tick = function () {
+        let timeout = $timeout($scope.tick, 200);
+        if (game.step != GameStep.END) {
+            GameEngine.moveToNextStep(game);
+            $scope.showStage();
+            console.log(game.step);
+        } else {
+            $timeout.cancel(timeout);
         }
-    }
+    };
+
+    $scope.tick();
+
+    $scope.bet = function () {
+        let player = $scope.currentPlayer();
+        let value = angular.element(document.getElementById('BetValue')).val()
+        console.log(value);
+
+        if (value > game.highbets) {
+            GameEngine.applyBet(game, player, BetType.RAISE, value);
+        } else {
+            GameEngine.applyBet(game, player, BetType.FOLLOW);
+        }
+    };
+
+    $scope.quit = function () {
+        let player = $scope.currentPlayer();
+        GameEngine.applyBet(game, player, BetType.QUIT);
+    };
+
+    $scope.getPlayerStatusName = PlayerUtils.getPlayerStatusName;
 }
 
 </script>

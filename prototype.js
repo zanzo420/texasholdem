@@ -1,20 +1,15 @@
 // https://en.wikipedia.org/wiki/Standard_52-card_deck
 
-
 /**
  * Poker card class.
  */
 class Card {
     constructor(suit, rank) {
-        this.suit_ = suit;
-        this.rank_ = rank;
+        this.suit = suit;
+        this.rank = rank;
     }
 
-    get suit() { return this.suit_; }
-
-    get rank() { return this.rank_; }
-
-    get id() { return this.suit_ * 16 + this.rank_; }
+    get id() { return this.suit * 16 + ((this.rank>11)?this.rank+1:this.rank); }
 
     get name() { return CardUtils.getCardName(this); }
 
@@ -77,7 +72,10 @@ class CardUtils {
     }
 
     static getCardFromId(id) {
-        return new Card(Math.floor(id/16), id%16);
+        let suit = Math.floor(id/16);
+        let rank = id%16;
+        rank = ((rank>11)?rank-1:rank);
+        return new Card(suit, rank);
     }
 
     static getCardName(card) {
@@ -160,15 +158,13 @@ class Hand {
             secondRank = Rank.NONE,
             thirdRank = Rank.NONE,
             forthRank = Rank.NONE,
-            fifthRank = Rank.NONE) {
+            fifthRank = Rank.NONE,
+            suit = Suit.NONE) {
 
-        this.handRank_ = handRank;
-        this.ranks_ = [leadingRank, secondRank, thirdRank, forthRank, fifthRank];
+        this.handRank = handRank;
+        this.suit = suit;
+        this.ranks = [leadingRank, secondRank, thirdRank, forthRank, fifthRank];
     }
-
-    get ranks() { return this.ranks_; }
-
-    get handRank() { return this.handRank_; }
 
     get weight() {
         return this.handRank * 0xF00000
@@ -178,15 +174,202 @@ class Hand {
         + CardUtils.getRankWeight(this.ranks[3]) * 0x000010
         + CardUtils.getRankWeight(this.ranks[4]);
     }
+
+    get name() { return HandUtils.getHandName(this);}
 }
 
 class HandUtils {
+    static findCardsByHand(hand, cards, extraCards)
+    {
+        let targetCards = cards;
+        if (extraCards != undefined) {
+            targetCards = cards.concat(extraCards);
+        }
+        
+        let findAndRemoveCard = function (cards, suit, rank) {
+            let index = 0;
+            for (let card of cards) {
+                if ((suit == Suit.NONE || card.suit == suit) && (rank == Rank.NONE || card.rank == rank)) {
+                    cards.splice(index, 1);
+                    return card;
+                }
+
+                index++;
+            }
+        };
+
+        let findCardForHighCard = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            for (let i=0; i<5; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[i]);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        let findCardForFlush = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            for (let i=0; i<5; i++) {
+                let c = findAndRemoveCard(tmpCards, hand.suit, hand.ranks[i]);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        let findCardForStraight = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            let rank = hand.ranks[0];
+            for (let i=0; i<5; i++) {
+                console.log(rank);
+                console.log(tmpCards);
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, rank);
+                ret.push(c);
+
+                rank --;
+                if (rank <= 0) {
+                    rank += 13;
+                }
+            }
+            return ret;
+        };
+
+        let findCardForFullHouse = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            for (let i=0; i<3; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[0]);
+                ret.push(c);
+            }
+            for (let i=0; i<2; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[1]);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        let findCardForThreeOfAKind = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            for (let i=0; i<3; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[0]);
+                ret.push(c);
+            }
+            for (let i=0; i<2; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[1+i]);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        let findCardForTwoPairs = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            for (let i=0; i<2; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[0]);
+                ret.push(c);
+            }
+            for (let i=0; i<2; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[1]);
+                ret.push(c);
+            }
+            {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[2]);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        let findCardForPair = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            for (let i=0; i<2; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[0]);
+                ret.push(c);
+            }
+            for (let i=1; i<4; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[i]);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        let findCardForFourOfAKind = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            for (let i=0; i<4; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[0]);
+                ret.push(c);
+            }
+            {
+                let c = findAndRemoveCard(tmpCards, Suit.NONE, hand.ranks[1]);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        let findCardForStraightFlush = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            let rank = hand.ranks[0];
+            for (let i=0; i<5; i++) {
+                let c = findAndRemoveCard(tmpCards, hand.suit, rank);
+                ret.push(c);
+
+                rank --;
+                if (rank <= 0) {
+                    rank += 13;
+                }
+            }
+            return ret;
+        };
+
+        let findCardForRoyalFlush = function (hand, cards) {
+            let tmpCards = cards.slice();
+            let ret = [];
+            {
+                let c = findAndRemoveCard(tmpCards, Suit.DIAMOND, Rank.ACE);
+                ret.push(c);
+            }
+            for (let i=0; i<4; i++) {
+                let c = findAndRemoveCard(tmpCards, Suit.DIAMOND, Rank.KING - i);
+                ret.push(c);
+            }
+            return ret;
+        };
+
+        switch(hand.handRank) {
+            case HandRank.HIGH_CARD:
+                return findCardForHighCard (hand, targetCards);
+            case HandRank.PAIR:
+                return findCardForPair (hand, targetCards);
+            case HandRank.TWO_PAIRS:
+                return findCardForTwoPairs (hand, targetCards);
+            case HandRank.THREE_OF_A_KIND:
+                return findCardForThreeOfAKind (hand, targetCards);
+            case HandRank.STRAIGHT:
+                return findCardForStraight (hand, targetCards);
+            case HandRank.FLUSH:
+                return findCardForFlush (hand, targetCards);
+            case HandRank.FULL_HOUSE:
+                return findCardForFullHouse (hand, targetCards);
+            case HandRank.FOUR_OF_A_KIND:
+                return findCardForFourOfAKind (hand, targetCards);
+            case HandRank.STRAIGHT_FLUSH:
+                return findCardForStraightFlush (hand, targetCards);
+            case HandRank.ROYAL_FLUSH:
+                return findCardForRoyalFlush (hand, targetCards);
+        }
+    }
+
     static getHandName(hand) {
         switch(hand.handRank) {
             case HandRank.HIGH_CARD:
                 return "High Card";
             case HandRank.PAIR:
-                return "Pairs";
+                return "Pair";
             case HandRank.TWO_PAIRS:
                 return "Tow Pairs";
             case HandRank.THREE_OF_A_KIND:
@@ -264,27 +447,25 @@ class HandRankingAnalyzer {
         return maxCombo;
     }
 
-    // generate a specific handranking 
+    // generate a specific hand
     static generateFourOfAKind(ranksCount) {
-        var leadingRank = Rank.NONE;
-        var secondRank = Rank.NONE;
+        var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
         for (var i=0; i<13; i++) {
             if (ranksCount[i] == 4) {
-                leadingRank = i + 1;
+                cards[0] = i + 1;
             }
             
             if (ranksCount[i] == 1) {
-                secondRank = i + 1;
+                cards[1] = i + 1;
             }
         }
 
-        return new Hand(HandRank.FOUR_OF_A_KIND, leadingRank, secondRank);
+        return new Hand(HandRank.FOUR_OF_A_KIND, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
-    // generate a specific handranking 
+    // generate a specific hand
     static generateHighCard(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
-        var secondRank = Rank.NONE;
         var index = 0;
         for (var i=13; i>0; i--) {
             if (ranksCount[i%13] != 0) {
@@ -296,10 +477,9 @@ class HandRankingAnalyzer {
         return new Hand(HandRank.HIGH_CARD, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
-    // generate a specific handranking 
+    // generate a specific hand
     static generatePair(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
-        var secondRank = Rank.NONE;
         var index = 1;
         for (var i=13; i>0; i--) {
             if (ranksCount[i%13] == 1) {
@@ -314,10 +494,9 @@ class HandRankingAnalyzer {
         return new Hand(HandRank.PAIR, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
-    // generate a specific handranking 
+    // generate a specific hand
     static generateTwoPairs(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
-        var secondRank = Rank.NONE;
         var index1 = 2;
         var index2 = 0;
         for (var i=13; i>0; i--) {
@@ -334,10 +513,11 @@ class HandRankingAnalyzer {
         return new Hand(HandRank.TWO_PAIRS, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
-    // generate a specific handranking 
-    static generateFlush(ranksCount) {
+    // generate a specific hand
+    static generateFlush(ranksCount, suitsCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
-        var secondRank = Rank.NONE;
+        var leadingSuit = Suit.NONE;
+
         var index = 0;
         for (var i=13; i>0; i--) {
             if (ranksCount[i%13] != 0) {
@@ -346,13 +526,19 @@ class HandRankingAnalyzer {
             }
         }
 
-        return new Hand(HandRank.FLUSH, cards[0], cards[1], cards[2], cards[3], cards[4]);
+        for (var i=0; i<4; i++) {
+            if (suitsCount[i] == 5) {
+                leadingSuit = i+1;
+            }
+        }
+
+        return new Hand(HandRank.FLUSH, cards[0], cards[1], cards[2], cards[3], cards[4], leadingSuit);
     }
 
-    // generate a specific handranking 
+    // generate a specific hand
     static generateFullHouse(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
-        var secondRank = Rank.NONE;
+
         for (var i=13; i>0; i--) {
             if (ranksCount[i%13] == 3) {
                 cards[0] = i%13 + 1;
@@ -365,10 +551,10 @@ class HandRankingAnalyzer {
         return new Hand(HandRank.FULL_HOUSE, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
 
-    // generate a specific handranking 
+    // generate a specific hand
     static generateThreeOfAKind(ranksCount) {
         var cards = [Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE,Rank.NONE];
-        var secondRank = Rank.NONE;
+
         var index = 1;
         for (var i=13; i>0; i--) {
             if (ranksCount[i%13] == 1) {
@@ -383,34 +569,60 @@ class HandRankingAnalyzer {
         return new Hand(HandRank.THREE_OF_A_KIND, cards[0], cards[1], cards[2], cards[3], cards[4]);
     }
     
-    // generate a specific handranking 
+    // generate a specific hand
     static generateStraight(ranksCount) {
         var leadingRank = Rank.NONE;
-        for (var i=13; i>0; i--) {
-            if (ranksCount[i%13] == 1) {
-                leadingRank = i%13 + 1;
+
+        for (var i=12; i>0; i--) {
+            if (ranksCount[i] == 1) {
+                leadingRank = i + 1;
                 break;
             }
         }
 
-        return new Hand(HandRank.STRAIGHT, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
+        if (leadingRank == Rank.KING && ranksCount[0] == 1) {
+            leadingRank = Rank.ACE;
+        }
+
+        return new Hand(HandRank.STRAIGHT, leadingRank);
     }
     
-    // generate a specific handranking 
-    static generateStraightFlush(ranksCount) {
+    // generate a specific hand
+    static generateStraightFlush(ranksCount, suitsCount) {
         var leadingRank = Rank.NONE;
-        for (var i=13; i>0; i--) {
-            if (ranksCount[i%13] == 1) {
-                leadingRank = i%13 + 1;
+        var leadingSuit = Suit.NONE;
+
+        for (var i=12; i>0; i--) {
+            if (ranksCount[i] == 1) {
+                leadingRank = i + 1;
                 break;
             }
         }
 
-        return new Hand(HandRank.STRAIGHT_FLUSH, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE);
+        if (leadingRank == Rank.KING && ranksCount[0] == 1) {
+            leadingRank = Rank.ACE;
+        }
+
+        for (var i=0; i<4; i++) {
+            if (suitsCount[i] == 5) {
+                leadingSuit = i+1;
+            }
+        }
+
+        return new Hand(HandRank.STRAIGHT_FLUSH, leadingRank, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE, leadingSuit);
+    }
+
+    // generate a specific hand
+    static generateRoyalFlush() {
+        return new Hand(HandRank.ROYAL_FLUSH)
     }
 
     // generate a handranking from 5 cards
     static getRankingFromCards(cards) {
+        if (cards.length < 5) {
+            return undefined;
+        }
+
         var suitsCount = [0,0,0,0];
         var ranksCount = [0,0,0,0,0,0,0,0,0,0,0,0,0];
 
@@ -425,11 +637,12 @@ class HandRankingAnalyzer {
         var maxRankCombo = this.getMaxRankCombo(ranksCount);
 
         if (numberOfSuits == 1 && numberOfRanks == 5 && maxRankCombo == 5) {
-            // STRAIGHT_FLUSH or ROYAL_FLUSH
             if (cards[0].suit == Suit.DIAMOND && ranksCount[0] == 1) {
-                return new Hand(HandRank.ROYAL_FLUSH)
+                // ROYAL_FLUSH
+                return this.generateRoyalFlush();
             } else {
-                return this.generateStraightFlush(ranksCount);
+                // STRAIGHT_FLUSH
+                return this.generateStraightFlush(ranksCount, suitsCount);
             }
         } else if (numberOfRanks == 2) {
             if (maxRankCount == 4) {
@@ -441,7 +654,7 @@ class HandRankingAnalyzer {
             }
         } else if (numberOfSuits == 1) {
             // FLUSH
-            return this.generateFlush(ranksCount);
+            return this.generateFlush(ranksCount, suitsCount);
         } else if (maxRankCombo == 5) {
             // STRAIGHT
             return this.generateStraight(ranksCount);
@@ -516,6 +729,15 @@ const GameStep = {
     END: 7
 };
 
+// PlayerStatus enum
+const PlayerStatus = {
+    NONE: 0,
+    DONE: 1,
+    QUIT: 2,
+    PENDING_USER: 3, // waiting for user to do something;
+    PENDING_ENGINE: 4 // waiting for system to continue;
+};
+
 // BetType enum
 const BetType = {
     NONE: 0,
@@ -526,57 +748,159 @@ const BetType = {
 
 
 class GameStepHelper {
-    static moveToNextStep(engine, players) {
-        let step = engine.step;
+
+    static getActivePlayers(game) {
+        let activePlayers = [];
+
+        for (let player of game.players) {
+            if (player.status != PlayerStatus.QUIT) {
+                activePlayers.push(player);
+            }
+        }
+
+        return activePlayers;
+    }
+
+    static moveToNextStep(game, players) {
+
+        let activePlayers = this.getActivePlayers(game);
+
+        if (activePlayers.length == 1 && game.step < GameStep.SHOWDOWN) {
+            activePlayers[0].status = PlayerStatus.DONE;
+            activePlayers[0].bet = BetType.NONE;
+            return GameStep.SHOWDOWN;
+        }
+
+        if (!this.checkBets(activePlayers)) {
+            return game.step;
+        }
+
+        for (let player of activePlayers) {
+            if (player.status != PlayerStatus.DONE) {
+                return game.step;
+            }
+        }
+
+        let step = game.step;
         // first is holder, 2 player at least, first is holder
         switch(step) {
             case GameStep.NONE:
                 // PREPARE
-                // TODO
+                GameEngine.shuffleDeck(game.deck);
+                this.forcePlayerToDoneStatus(players);
                 return GameStep.ANTE;
             case GameStep.ANTE:
                 // BLIND BET
-                this.blindBet(players[1], 1);
-                this.blindBet(players[2 % players.length], 2);
+                this.blindBet(game, players[1], 1);
+                this.blindBet(game, players[2 % players.length], 2);
+                this.forcePlayerToDoneStatus(players);
                 return GameStep.PREFLOP;
             case GameStep.PREFLOP:
-                this.givePlayerCards(engine, players);
-                this.givePlayerCards(engine, players);
+                this.givePlayerCards(game, players);
+                this.givePlayerCards(game, players);
                 // PREFLOP BET
-                this.runBets(engine, players);
+                this.resetPlayerToForRoundBet(activePlayers, 3);
                 return GameStep.FLOP;
             case GameStep.FLOP:
-                this.showSharedCard(engine);
-                this.showSharedCard(engine);
-                this.showSharedCard(engine);
+                this.showSharedCard(game);
+                this.showSharedCard(game);
+                this.showSharedCard(game);
+                this.updatePlayerHands(game);
                 // FLOP BET
-                this.runBets(engine, players);
+                this.resetPlayerToForRoundBet(activePlayers);
                 return GameStep.TURN;
             case GameStep.TURN:
-                this.showSharedCard(engine);
+                this.showSharedCard(game);
+                this.updatePlayerHands(game);
                 // TURN BET
-                this.runBets(engine, players);
+                this.resetPlayerToForRoundBet(activePlayers);
                 return GameStep.RIVER;
             case GameStep.RIVER:
-                this.showSharedCard(engine);
+                this.showSharedCard(game);
+                this.updatePlayerHands(game);
                 // RIVER BET
-                this.runBets(engine, players);
+                this.resetPlayerToForRoundBet(activePlayers);
                 return GameStep.SHOWDOWN;
             case GameStep.SHOWDOWN:
+                this.updateWinner(game);
                 // PAY
                 return GameStep.END;
+        }
+    }
+
+    static forcePlayerToDoneStatus(players) {
+        for (let player of players) {
+            player.status = PlayerStatus.DONE;
+        }
+    }
+
+    static resetPlayerToForRoundBet(players, nextIndex = 0) {
+        for (let player of players) {
+            player.status = PlayerStatus.NONE;
+            player.bet = BetType.NONE;
+        }
+        players[nextIndex%players.length].status = PlayerStatus.PENDING_USER;
+    }
+
+    static updatePlayerHands(game) {
+        for (let player of game.players) {
+            let cards = [];
+            cards = cards.concat(player.hole, game.board);
+            let bestCards = GameEngine.selectBestCards(cards);
+            player.hand = GameEngine.getHandFromCards(bestCards);
+        }
+    }
+
+    static updateWinner(game) {
+        let activePlayers = this.getActivePlayers(game);
+        if (activePlayers.length == 1) {
+            activePlayers[0].winner = true;
+            return;
+        }
+
+        let biggestRanking = null;
+        for(let player of activePlayers) {
+            if (biggestRanking == null) {
+                biggestRanking = player.hand;
+            } else if (player.hand.weight > biggestRanking.weight) {
+                biggestRanking = player.hand;
+            }
+        }
+
+        for(let player of activePlayers) {
+            if (player.hand.weight == biggestRanking.weight) {
+                player.winner = true;
+            }
         }
     }
 
     static givePlayerCards(engine, players) {
         for (let player of players) {
             let card = engine.deck.pop();
-            player.handcards.push(card);
+            player.hole.push(card);
         }
     }
 
-    static blindBet(player, numberOfBid) {
+    static blindBet(engine, player, numberOfBid) {
+        engine.highbets = numberOfBid;
         return player.doBlindBet(numberOfBid);
+    }
+
+    static applyBet(game, player, bet) {
+        if (player.status != PlayerStatus.PENDING_USER)
+        {
+            return;
+        }
+
+        player.status = PlayerStatus.PENDING_ENGINE;
+        player.bet = bet.type;
+        if (bet.type == BetType.RAISE || bet.type == BetType.FOLLOW) {
+            player.bets = bet.size;
+        }
+
+        if (game.highbets < player.bets) {
+            game.highbets = player.bets;
+        }
     }
 
     static waitForBet(engine, player) {
@@ -589,36 +913,48 @@ class GameStepHelper {
         return bet;
     }
 
-    static showSharedCard(engine) {
-        let card = engine.deck.pop();
-        engine.sharedCards.push(card);
+    static showSharedCard(game) {
+        let card = game.deck.pop();
+        game.board.push(card);
     }
 
-    static runBets(engine, players) {
-        while (true) {
-            let allBided = false;
-            let comboNoRaise = 0;
-            let endBid = false;
-            for (let player of players) {
-                let bid = this.waitForBet(engine, player);
-                if (bid.type == BetType.RAISE) {
-                    comboNoRaise = 0;
-                } else {
-                    // quit or follow
-                    comboNoRaise ++;
-                }
-                if ((comboNoRaise >= players.length - 1) && allBided) {
-                    endBid = true;
-                    break;
-                }
 
-                allBided = true;
-            }
-            
-            if (endBid) {
-                break;
+    static checkBets(players) {
+        for (let i=0; i< players.length; i++) {
+
+            let player = players[i];
+
+            if (player.status == PlayerStatus.PENDING_ENGINE) {
+                let nextPlayer = players[(i + 1) % players.length];
+                if (player.bet == BetType.FOLLOW && player.bets == nextPlayer.bets && nextPlayer.status != PlayerStatus.NONE) {
+                    player.status = PlayerStatus.DONE;
+                    break;
+                } else {
+                    if (player.bet == BetType.QUIT) {
+                        player.status = PlayerStatus.QUIT;
+                    } else {
+                        player.status = PlayerStatus.DONE;
+                    }
+
+                    nextPlayer.status = PlayerStatus.PENDING_USER;
+                    return false;
+                }
             }
         }
+
+        for (let i=0; i< players.length; i++) {
+
+            let player = players[i];
+            if (player.status == PlayerStatus.PENDING_USER) {
+                return false;
+            }
+
+            if (player.status == PlayerStatus.NONE) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
 
@@ -630,53 +966,45 @@ class Bet {
     }
 }
 
-
-class Player {
-    constructor(name) {
-        this.id = Player.ids;
-        Player.ids++;
-
-        this.money = 0;
-        if (name == undefined) {
-            name = "Player " + this.id;
+class PlayerUtils
+{
+    static getPlayerStatusName(status)
+    {
+        switch (status) {
+            case PlayerStatus.NONE:
+            default:
+                return "Wait";
+            case PlayerStatus.DONE:
+                return "Wait";
+            case PlayerStatus.QUIT:
+                return "Quit";
+            case PlayerStatus.PENDING_USER:
+                return "Pending";
+            case PlayerStatus.PENDING_ENGINE:
+                return "Pending";
         }
-        this.bets = 0;
-
-        this.name = name;
-        this.handcards = [];
-    }
-
-    doBet(targetNum) {
-        let num = this.makeBet(targetNum);
-        return new Bet(BetType.FOLLOW, num);
-    }
-
-    doBlindBet(num) {
-        this.makeBet(num);
-
-        return new Bet(BetType.FOLLOW, num);
-    }
-    
-    makeBet(targetNum) {
-        let num = targetNum - this.bets;
-
-        this.money -= num;
-        this.bets += num;
-
-        return num;
     }
 }
 
-Player.ids = 0;
 
 // The engine class, the entrance of most features.
-class PokerEngine {
-    constructor() {
-        this.deck = PokerEngine.createDeck ();
-        this.step = GameStep.NONE;
-        this.sharedCards = [];
-        this.pot = 0;
-        this.highbets = 0;
+class GameEngine {
+    static createGame (players) {
+        let game = new Game();
+        game.deck = GameEngine.createDeck();
+        game.players = players;
+        game.step = GameStep.NONE;
+        GameEngine.moveToNextStep(game);
+
+        for (let player of players) {
+            player.status = PlayerStatus.DONE;
+        }
+
+        return game;
+    }
+
+    static moveToNextStep(game) {
+        game.step = GameStepHelper.moveToNextStep(game, game.players);
     }
 
     static createDeck () {
@@ -691,7 +1019,18 @@ class PokerEngine {
         return deck;
     }
 
-    static getRankingFromCards(cards) {
+    static shuffleDeck(deck) {
+        let length = deck.length;
+        while (length > 0) {
+            let index = Math.floor(Math.random() * length);
+            length--;
+            let temp = deck[length];
+            deck[length] = deck[index];
+            deck[index] = temp;
+        }
+    }
+
+    static getHandFromCards(cards) {
         return HandRankingAnalyzer.getRankingFromCards(cards);
     }
 
@@ -699,30 +1038,95 @@ class PokerEngine {
         return HandRankingAnalyzer.selectBestCards(cards);
     }
 
-    shuffleDeck() {
-        let length = this.deck.length;
-        while (length > 0) {
-            let index = Math.floor(Math.random() * length);
-            length--;
-            let temp = this.deck[length];
-            this.deck[length] = this.deck[index];
-            this.deck[index] = temp;
+    static applyBet(game, player, betType, betSize = 0) {
+
+        if (betType == BetType.FOLLOW) {
+            if (betSize <= game.highbets) {
+                betSize = game.highbets;
+            }
         }
+
+        if (betType == BetType.RAISE) {
+            if (betSize <= game.highbets + 1) {
+                betSize = game.highbets + 1;
+            }
+        }
+
+        let bet = new Bet(betType, betSize);
+        return GameStepHelper.applyBet(game, player, bet);
     }
 }
 
+class Game {
+    constructor() {
+        this.players = [];
+        this.deck = [];
+        this.step = GameStep.NONE;
+        this.board = [];
+        this.pot = 0;
+        this.highbets = 0;
+    }
+}
+
+class Player {
+    constructor(name, ai) {
+        this.id = Player.ids;
+        Player.ids++;
+
+        this.money = 0;
+        if (name == undefined) {
+            name = "Player " + this.id;
+        }
+        this.bets = 0;
+
+        this.name = name;
+        this.hole = [];
+        this.hand = null;
+        this.winner = false;
+        this.status = PlayerStatus.NONE;
+        this.bet = BetType.NONE;
+
+        if (ai == undefined) {
+            this.robot = false;
+        } else {
+            this.robot = true;
+        }
+    }
+
+    doBet(targetNum) {
+        let num = this.makeBet(targetNum);
+        return new Bet(BetType.FOLLOW, num);
+    }
+
+    doBlindBet(num) {
+        this.makeBet(num);
+
+        return new Bet(BetType.FOLLOW, num);
+    }
+
+    makeBet(targetNum) {
+        let num = targetNum - this.bets;
+
+        this.money -= num;
+        this.bets += num;
+
+        return num;
+    }
+}
+
+Player.ids = 0;
+
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = exports = {
-        CardUtils : CardUtils,
-        HandUtils: HandUtils,
-        PokerEngine : PokerEngine,
+        GameEngine : GameEngine,
         Suit : Suit,
-        Card : Card,
         Rank : Rank,
-        Hand : Hand,
+        Card : Card,
+        CardUtils : CardUtils,
         HandRank : HandRank,
-        Player : Player,
-        GameStepHelper : GameStepHelper,
-        GameStep : GameStep
+        Hand : Hand,
+        HandUtils: HandUtils,
+        GameStep : GameStep,
+        Player : Player
     };
 }

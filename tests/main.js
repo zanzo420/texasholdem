@@ -4,14 +4,13 @@ let Test = test.Test;
 var prototype = require ('../prototype.js');
 let CardUtils = prototype.CardUtils;
 let HandUtils = prototype.HandUtils;
-let PokerEngine = prototype.PokerEngine;
+let GameEngine = prototype.GameEngine;
 let Suit = prototype.Suit;
 let Card = prototype.Card;
 let Rank = prototype.Rank;
 let Hand = prototype.Hand;
 let HandRank = prototype.HandRank;
 let Player = prototype.Player;
-let GameStepHelper = prototype.GameStepHelper;
 let GameStep = prototype.GameStep;
 
 
@@ -27,13 +26,13 @@ new Test("Card Id Test", function() {
 });
 
 // test case
-new Test("PokerEngine Create Deck Test", function() {
-    var deck = PokerEngine.createDeck();
+new Test("GameEngine Create Deck Test", function() {
+    var deck = GameEngine.createDeck();
     this.areEqual(deck.length, 52);
 });
 
 // test case
-new Test("PokerEngine.getRankingFromCards FOUR_OF_A_KIND Test", function() {
+new Test("GameEngine.getRankingFromCards FOUR_OF_A_KIND Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.JACK),
         new Card(Suit.CLUB, Rank.JACK),
@@ -41,12 +40,12 @@ new Test("PokerEngine.getRankingFromCards FOUR_OF_A_KIND Test", function() {
         new Card(Suit.HEART, Rank.JACK),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.FOUR_OF_A_KIND)
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.FOUR_OF_A_KIND)
 });
 
 // test case
-new Test("PokerEngine.getRankingFromCards HIGH_CARD Test", function() {
+new Test("GameEngine.getRankingFromCards HIGH_CARD Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.CLUB, Rank.RANK2),
@@ -54,12 +53,12 @@ new Test("PokerEngine.getRankingFromCards HIGH_CARD Test", function() {
         new Card(Suit.HEART, Rank.RANK10),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.HIGH_CARD)
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.HIGH_CARD)
 });
 
 // test case
-new Test("PokerEngine.getRankingFromCards PAIR Test", function() {
+new Test("GameEngine.getRankingFromCards PAIR Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.CLUB, Rank.RANK2),
@@ -67,12 +66,12 @@ new Test("PokerEngine.getRankingFromCards PAIR Test", function() {
         new Card(Suit.HEART, Rank.RANK8),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.PAIR)
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.PAIR)
 });
 
 // test case
-new Test("PokerEngine.getRankingFromCards TWO_PAIRS Test", function() {
+new Test("GameEngine.getRankingFromCards TWO_PAIRS Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.RANK2),
         new Card(Suit.CLUB, Rank.RANK2),
@@ -80,12 +79,12 @@ new Test("PokerEngine.getRankingFromCards TWO_PAIRS Test", function() {
         new Card(Suit.HEART, Rank.RANK8),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.TWO_PAIRS)
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.TWO_PAIRS)
 });
 
 // test case
-new Test("PokerEngine.getRankingFromCards ROYAL_FLUSH Test", function() {
+new Test("GameEngine.getRankingFromCards ROYAL_FLUSH Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.DIAMOND, Rank.RANK10),
@@ -93,12 +92,12 @@ new Test("PokerEngine.getRankingFromCards ROYAL_FLUSH Test", function() {
         new Card(Suit.DIAMOND, Rank.KING),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.ROYAL_FLUSH)
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.ROYAL_FLUSH)
 });
 
 // test case
-new Test("PokerEngine.selectBestCards TWO_PAIRS Test", function() {
+new Test("GameEngine.selectBestCards TWO_PAIRS Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.DIAMOND, Rank.RANK2),
@@ -108,14 +107,14 @@ new Test("PokerEngine.selectBestCards TWO_PAIRS Test", function() {
         new Card(Suit.HEART, Rank.RANK10),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var cards = PokerEngine.selectBestCards(cards);
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.TWO_PAIRS);
-    this.areEqual(handranking.ranks, [Rank.RANK8, Rank.RANK2, Rank.ACE, Rank.NONE, Rank.NONE]);
+    var cards = GameEngine.selectBestCards(cards);
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.TWO_PAIRS);
+    this.areEqual(hand.ranks, [Rank.RANK8, Rank.RANK2, Rank.ACE, Rank.NONE, Rank.NONE]);
 });
 
 // test case
-new Test("PokerEngine.selectBestCards FLUSH Test", function() {
+new Test("GameEngine.selectBestCards FLUSH Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.DIAMOND, Rank.RANK2),
@@ -125,14 +124,14 @@ new Test("PokerEngine.selectBestCards FLUSH Test", function() {
         new Card(Suit.DIAMOND, Rank.RANK10),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var cards = PokerEngine.selectBestCards(cards);
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.FLUSH);
-    this.areEqual(handranking.ranks, [Rank.ACE, Rank.QUEEN, Rank.RANK10, Rank.RANK8, Rank.RANK2]);
+    var cards = GameEngine.selectBestCards(cards);
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.FLUSH);
+    this.areEqual(hand.ranks, [Rank.ACE, Rank.QUEEN, Rank.RANK10, Rank.RANK8, Rank.RANK2]);
 });
 
 // test case
-new Test("PokerEngine.selectBestCards FULL_HOUSE Test", function() {
+new Test("GameEngine.selectBestCards FULL_HOUSE Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.DIAMOND, Rank.RANK2),
@@ -142,14 +141,14 @@ new Test("PokerEngine.selectBestCards FULL_HOUSE Test", function() {
         new Card(Suit.HEART, Rank.RANK8),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var cards = PokerEngine.selectBestCards(cards);
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.FULL_HOUSE);
-    this.areEqual(handranking.ranks, [Rank.RANK8, Rank.RANK2, Rank.NONE, Rank.NONE, Rank.NONE]);
+    var cards = GameEngine.selectBestCards(cards);
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.FULL_HOUSE);
+    this.areEqual(hand.ranks, [Rank.RANK8, Rank.RANK2, Rank.NONE, Rank.NONE, Rank.NONE]);
 });
 
 // test case
-new Test("PokerEngine.selectBestCards STRAIGHT Test", function() {
+new Test("GameEngine.selectBestCards STRAIGHT Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.DIAMOND, Rank.RANK2),
@@ -159,14 +158,14 @@ new Test("PokerEngine.selectBestCards STRAIGHT Test", function() {
         new Card(Suit.HEART, Rank.KING),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var cards = PokerEngine.selectBestCards(cards);
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.STRAIGHT);
-    this.areEqual(handranking.ranks, [Rank.ACE, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE]);
+    var cards = GameEngine.selectBestCards(cards);
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.STRAIGHT);
+    this.areEqual(hand.ranks, [Rank.ACE, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE]);
 });
 
 // test case
-new Test("PokerEngine.selectBestCards FLUSH beats STRAIGHT Test", function() {
+new Test("GameEngine.selectBestCards FLUSH beats STRAIGHT Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.SPADE, Rank.RANK10),
@@ -176,14 +175,14 @@ new Test("PokerEngine.selectBestCards FLUSH beats STRAIGHT Test", function() {
         new Card(Suit.DIAMOND, Rank.KING),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var cards = PokerEngine.selectBestCards(cards);
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.FLUSH);
-    this.areEqual(handranking.ranks, [Rank.ACE, Rank.KING, Rank.QUEEN, Rank.RANK10, Rank.RANK8]);
+    var cards = GameEngine.selectBestCards(cards);
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.FLUSH);
+    this.areEqual(hand.ranks, [Rank.ACE, Rank.KING, Rank.QUEEN, Rank.RANK10, Rank.RANK8]);
 });
 
 // test case
-new Test("PokerEngine.selectBestCards ROYAL_FLUSH Test", function() {
+new Test("GameEngine.selectBestCards ROYAL_FLUSH Test", function() {
     var cards = [
         new Card(Suit.DIAMOND, Rank.ACE),
         new Card(Suit.SPADE, Rank.RANK10),
@@ -193,39 +192,39 @@ new Test("PokerEngine.selectBestCards ROYAL_FLUSH Test", function() {
         new Card(Suit.DIAMOND, Rank.KING),
         new Card(Suit.DIAMOND, Rank.QUEEN)
     ]
-    var cards = PokerEngine.selectBestCards(cards);
-    var handranking = PokerEngine.getRankingFromCards(cards);
-    this.areEqual(handranking.handRank, HandRank.ROYAL_FLUSH);
-    this.areEqual(handranking.ranks, [Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE]);
+    var cards = GameEngine.selectBestCards(cards);
+    var hand = GameEngine.getHandFromCards(cards);
+    this.areEqual(hand.handRank, HandRank.ROYAL_FLUSH);
+    this.areEqual(hand.ranks, [Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE, Rank.NONE]);
 });
 
 // test case
-new Test("PokerEngine GameSteps Test", function() {
-    let engine = new PokerEngine();
-    engine.shuffleDeck();
+new Test("GameEngine GameSteps Test", function() {
     let players = [new Player(),new Player(),new Player()];
-    while (engine.step != GameStep.END) {
-        engine.step = GameStepHelper.moveToNextStep(engine, players);
+    let game = GameEngine.createGame(players);
+    GameEngine.shuffleDeck(game);
+    while (game.step != GameStep.END) {
+        GameEngine.moveToNextStep(game);
     }
 
-    this.isTrue(engine.sharedCards.length == 5);
+    this.isTrue(game.board.length == 5);
 
     for(let player of players) {
-        this.isTrue(player.handcards.length == 2);
+        this.isTrue(player.hole.length == 2);
         let cards = [];
-        cards = cards.concat(player.handcards, engine.sharedCards)
-        cards = PokerEngine.selectBestCards(cards);
-        player.handranking = PokerEngine.getRankingFromCards(cards);
+        cards = cards.concat(player.hole, game.board)
+        cards = GameEngine.selectBestCards(cards);
+        player.hand = GameEngine.getHandFromCards(cards);
     }
 
     let biggestRanking = null;
     let winner = null;
     for(let player of players) {
         if (biggestRanking == null) {
-            biggestRanking = player.handranking;
+            biggestRanking = player.hand;
             winner = player;
-        } else if (player.handranking.weight > biggestRanking.weight) {
-            biggestRanking = player.handranking;
+        } else if (player.hand.weight > biggestRanking.weight) {
+            biggestRanking = player.hand;
             winner = player;
         }
     }
