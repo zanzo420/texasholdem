@@ -55,16 +55,18 @@ background-size: 1120px 560px; background-position: {{card.rank * -80}}px {{card
     <div class="row">
         <div ng-repeat="player in game.players" class="col-md-3">
             <div class="player_hole player_status_{{player.status}}">
-                <span style="font-size: 18px;">{{ player.name }}</span> <br />
-                <span style="font-size: 18px;">BET: {{ player.bet }}</span> <br />
+                <h4 style="text-align: center; font-weight: bold;">{{ player.name }}</h4>
+                <span style="font-size: 18px;">Money: {{ player.money }}</span> <br />
                 <span style="font-size: 18px;">Bets: {{ player.bets }}</span> <br />
                 <span style="font-size: 18px;">Status: {{ getPlayerStatusName(player.status) }}</span> <br />
-                <span style="font-size: 18px;" class="player_win_{{ player.winner }}">HAND: {{ player.hand.name }}</span>
                 <div style="font-size: 128px; text-align: center;">
                     <div ng-repeat="card in player.hole" id="card_hole_img_{{card.id}}" class="card"
                          style="background-image: url('cards.png'); height: 112px; width: 80px;
     background-size: 1120px 560px; background-position: {{card.rank * -80}}px {{card.suit * -112}}px; display: inline-block;" >
                     </div>
+                </div>
+                <div style="text-align: center;">
+                    <span style="font-size: 18px;" class="player_win_{{ player.winner }}">{{ player.hand.name }}</span>
                 </div>
             </div>
         </div>
@@ -74,17 +76,22 @@ background-size: 1120px 560px; background-position: {{card.rank * -80}}px {{card
         <div class="col-md-6 col-md-offset-3 text-center">
             <div class="console">
                 <div class="row">
-                    <div class="col-xs-6 col-md-offset-2">
-                    <div class="input-group">
-                        <div class="input-group-addon">Bet</div>
-                        <input type="text" class="form-control input-lg" placeholder="min {{ game.highbets }}" value="{{ game.highbets }}" id="BetValue" >
-                        <span class="input-group-btn">
+                    <div class="col-md-6 col-md-offset-2">
+                        <div class="input-group">
+                            <div class="input-group-addon">Bet</div>
+                            <input type="text" class="form-control input-lg" placeholder="min {{ game.highbets }}" value="{{ game.highbets }}" id="BetValue" >
+                            <span class="input-group-btn">
                             <button class="btn btn-lg btn-default" ng-click="bet()" ng-disabled="currentPlayer() == null">&nbsp;Bet&nbsp;</button>
                         </span>
+                        </div>
                     </div>
-                    </div>
-                    <div class="col-xs-2">
+                    <div class="col-md-2">
                         <button class="btn btn-lg btn-default" ng-click="quit()" ng-disabled="currentPlayer() == null">Quit</button> <br /> <br />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 col-md-offset-4">
+                        <button class="btn btn-lg btn-default" ng-click="nextRound()" ng-disabled="game.step != 7">&nbsp;Next Round&nbsp;</button>
                     </div>
                 </div>
             </div>
@@ -146,7 +153,7 @@ function StageCtrl ($scope, $timeout) {
             $scope.showStage();
             console.log(game.step);
         } else {
-            $timeout.cancel(timeout);
+            // $timeout.cancel(timeout);
         }
     };
 
@@ -167,6 +174,10 @@ function StageCtrl ($scope, $timeout) {
     $scope.quit = function () {
         let player = $scope.currentPlayer();
         GameEngine.applyBet(game, player, BetType.QUIT);
+    };
+
+    $scope.nextRound = function () {
+        GameEngine.resetGame(game);
     };
 
     $scope.getPlayerStatusName = PlayerUtils.getPlayerStatusName;

@@ -823,6 +823,7 @@ class GameStepHelper {
                 return GameStep.SHOWDOWN;
             case GameStep.SHOWDOWN:
                 this.updateWinner(game);
+                this.payBets(game);
                 // PAY
                 return GameStep.END;
         }
@@ -874,6 +875,35 @@ class GameStepHelper {
         }
     }
 
+    static payBets(game) {
+        let winners = [];
+        let allBets = 0;
+
+        for(let player of game.players) {
+            if (player.winner) {
+                winners.push(player);
+            }
+            allBets += player.bets;
+            player.bets = 0;
+        }
+
+        let minShare = Math.floor(allBets/winners.length);
+
+        for(let player of winners) {
+            player.money += minShare;
+            allBets -= minShare;
+        }
+
+        for(let player of winners) {
+            if (allBets == 0) {
+                break;
+            }
+
+            player.money += 1;
+            allBets -= 1;
+        }
+    }
+
     static givePlayerCards(engine, players) {
         for (let player of players) {
             let card = engine.deck.pop();
@@ -901,16 +931,6 @@ class GameStepHelper {
         if (game.highbets < player.bets) {
             game.highbets = player.bets;
         }
-    }
-
-    static waitForBet(engine, player) {
-        let bet = player.doBet(engine.highbets);
-
-        if (engine.highbets < player.bets) {
-            engine.highbets = player.bets;
-        }
-
-        return bet;
     }
 
     static showSharedCard(game) {
@@ -993,12 +1013,37 @@ class GameEngine {
         let game = new Game();
         game.deck = GameEngine.createDeck();
         game.players = players;
-        game.step = GameStep.NONE;
-        GameEngine.moveToNextStep(game);
 
         for (let player of players) {
-            player.status = PlayerStatus.DONE;
+            player.money = 100;
         }
+
+        this.resetGame(game)
+
+        return game;
+    }
+
+    static resetGame (game) {
+        game.step = GameStep.NONE;
+
+        for (let player of game.players) {
+            player.status = PlayerStatus.DONE;
+            player.hand = null;
+            player.winner = false;
+            player.bet = BetType.NONE;
+
+            for (let card of player.hole) {
+                game.deck.push(card);
+            }
+            player.hole = [];
+        }
+
+        for (let card of game.board) {
+            game.deck.push(card);
+        }
+        game.board = [];
+
+        GameEngine.moveToNextStep(game);
 
         return game;
     }
@@ -1052,6 +1097,7 @@ class GameEngine {
             }
         }
 
+        player.makeBet(betSize);
         let bet = new Bet(betType, betSize);
         return GameStepHelper.applyBet(game, player, bet);
     }
@@ -1091,11 +1137,6 @@ class Player {
         } else {
             this.robot = true;
         }
-    }
-
-    doBet(targetNum) {
-        let num = this.makeBet(targetNum);
-        return new Bet(BetType.FOLLOW, num);
     }
 
     doBlindBet(num) {
